@@ -1,0 +1,31 @@
+Package: gmdp
+Title: Ground-Motion Design Parameters
+Version: 0.0.1.1000
+Authors@R: 
+    person("Alejandro", "Verri Kozlowski", , "averri@fi.uba.ar", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-8535-1170"))
+Description: The GMDP library provides tools for estimating design parameters in seismic geotechnical engineering. The package includes tools for importing seismic hazard data from various platforms (openQuake, FRisk), models for estimating the dynamic response of sites using spectral amplification models, models for estimating intensity measures in terms of ground accelerations and pseudo-accelerations on firm soil, generation of soil profiles through simulation, and models for estimating the site's dynamic properties.
+License: file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports: 
+    data.table,
+    epoxy,
+    stringr,
+    ini,
+    flextable,
+    readxl,
+    stats,
+    randomForest,
+    digest,
+    triangle,
+    utils,
+    highcharter
+Depends: 
+    R (>= 3.5)
+LazyData: true
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+LazyDataCompression: bzip2
