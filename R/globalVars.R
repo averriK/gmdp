@@ -1,0 +1,1 @@
+# utils::globalVariables(c("ValidSands","ValidGravels","ValidSilts","ValidClays","ValidOrganic","ValidFines","ValidCoarse","ValidUSCS","ValidGroups","SiteTable","VoidRatiosUSCS","RelativeDensityRanges","UnitWeightRanges","ParticleSize","USCS","ShearModelParameters","ShearModelParameters","CylinderRoots"))
