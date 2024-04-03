@@ -144,7 +144,6 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
     Dr[k] <- (emax[k]-eo[k])/(emax[k]-emin[k])
     # Unit Weight kN/m3
     RANGE <- UnitWeightRanges[USCS == UID[k]]
-    # browser()
 
     gsmin[k] <- runif(1,min=RANGE$gsminMin,max=RANGE$gsminMax) #[kN/m3]
     gsmax[k] <- runif(1,min=RANGE$gsmaxMin,max=RANGE$gsmaxMax) #[kN/m3]
@@ -207,7 +206,6 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
 
 
   # Get properties ----
-  # browser()
   dtVs <- hs/VSm
   VSa <- (cumsum(hs)/cumsum(dtVs)) # |> round(digits = 1)
   VS30 <- (30/sum(dtVs[zi<=30])) |> round(digits = 1)
