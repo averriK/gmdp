@@ -9,12 +9,14 @@
 #' @param n Number of ky values
 #'
 #' @return data.table
-#' @export
+#' @export fitModel.DnTR
 #'
-#' @examples
-#' @importFrom data.table data.table
+
+#' @import data.table
 #' @importFrom stats lm
 #' @importFrom stats predict
+#'
+#' @examples
 #'
 fitModel.DnTR <- function(x, xD = 1.3, Mw = 6.5, kymin = 0.005, kymax = 0.5, n = 30) {
 

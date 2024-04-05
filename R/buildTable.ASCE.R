@@ -5,13 +5,15 @@
 #' @param size Font Size
 #'
 #' @return data.table
-#' @export
+#' @export buildTable.ASCE
 #'
+#' @import data.table
 #' @examples
 #' buildTable.ASCE()
 #' buildTable.ASCE(units="m/s")
 #' buildTable.ASCE(units="m/s",engine="flextable")
 #' buildTable.ASCE(units="m/s",size=8)
+#'
 buildTable.ASCE <- function(units="m",engine="flextable",size=12){
   if(tolower(units) %in%  c("m","m/s")){
     DT <- data.table::data.table(

@@ -11,22 +11,23 @@
 #' @param SIDo Site ID
 #'
 #' @return Table
-#' @export
+#' @export buildTable.Kh
+#' @import data.table
 #'
 #' @examples
-#' @importFrom data.table setnames
-#' @importFrom data.table data.table
+#'
+#'
+
+
 buildTable.Kh <- function(x,Tso,Dao,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),Vs30o=NULL,SIDo=NULL){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
 
-  . <- .SD <- .N <- .I <- NULL
-
   # buildTable.Kmax(x=GMDP,Vs30o=760,Tso=0.4,Dao=1.0)
   DT <- x$KmaxTable
-  # DT <- DT[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,Kh)] |> unique()
-  DT <- DT[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
+
+DT <- DT[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
 
   if(!is.null(Vs30o)){
     SIDo <- Vs30toSID(Vs30o)

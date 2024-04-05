@@ -5,13 +5,16 @@
 #' @param n Number of points
 #'
 #' @return data.table
-#' @export
+#' @export fitModel.KmaxTR
 #'
-#' @examples
-#' @importFrom data.table data.table
+#' @import data.table
 #' @importFrom stats predict
 #' @importFrom randomForest randomForest
 #'
+#' @examples
+#'
+
+
 fitModel.KmaxTR <- function(x, n = 20) { # cm
 
   on.exit(expr = {

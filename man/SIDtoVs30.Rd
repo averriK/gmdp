@@ -16,6 +16,7 @@ Vs30 in m/s
 Convert Site Class to Vs30 in m/s
 }
 \examples{
+
 SIDtoVs30("A")
 
 SIDtoVs30("AB")

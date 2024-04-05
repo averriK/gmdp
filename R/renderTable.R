@@ -6,10 +6,14 @@
 #' @param x Data frame.
 #'
 #' @return
-#' @export
+#' @export renderTable
+#'
 #' @importFrom flextable flextable
+#' @import data.table
 #'
 #' @examples
+#'
+#'
 
 renderTable <- function(x,fontname="Helvetica",size=10){
   stopifnot(is.data.frame(x))

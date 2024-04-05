@@ -1,8 +1,4 @@
 utils::globalVariables(c("ValidSands","ValidGravels","ValidSilts","ValidClays","ValidOrganic","ValidFines","ValidCoarse","ValidUSCS","ValidGroups","SiteTable","VoidRatiosUSCS","RelativeDensityRanges","UnitWeightRanges","ParticleSize","USCS","ShearModelParameters","ShearModelParameters","CylinderRoots"))
-. <- NULL
-.SD <- NULL
-.N <- NULL
-.I <- NULL
 AEP <- NULL
 AF <- NULL
 Da <- NULL
@@ -65,6 +61,3 @@ Fines <- NULL
 Gravels <- NULL
 Sands <- NULL
 Water <- NULL
-
-
-

@@ -8,13 +8,16 @@
 #' @param Vu Upper limit Vs30 in m/s
 #'
 #' @return data.table
-#' @export
+#' @export fitModel.AFTR
 #'
-#' @examples
-#' @importFrom data.table data.table
+#' @import data.table
 #' @importFrom stats lm
 #' @importFrom stats predict.lm
 #' @importFrom stats approxfun
+#'
+#' @examples
+#'
+
 fitModel.AFTR <- function(x, Vs30 = NULL, Vref = NULL, Vl = 200, Vu = 2000) {
 
   on.exit(expr = {

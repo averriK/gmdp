@@ -5,9 +5,11 @@
 #' @param FinesFraction Integer. Fines fraction (0-100) in %
 #'#'
 #' @return Boolean. TRUE if fractions are OK, FALSE otherwise
-#' @export
+#' @export checkFractions
 #'
 #' @examples
+#' @import data.table
+#'
 checkFractions <- function(GravelsFraction,SandsFraction,FinesFraction){
     # Check 1
 

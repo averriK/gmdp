@@ -9,18 +9,18 @@
 #' @param TRo Return Period in years
 #'
 #' @return Table
-#' @export
+#' @import data.table
+#' @export buildTable.PGA
 #'
 #' @examples
-#' @importFrom data.table setnames
-#' @importFrom data.table data.table
+
 #'
 buildTable.PGA <- function(x,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),Vs30o=NULL,SIDo=NULL){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
 
-  . <- .SD <- .N <- .I <- NULL
+
 
   DT <- x$UHSTable[,.(TR,p,PGA,Vs30,Vref,SID)] |> unique()
   DT[,PGA:=round(PGA,digits=3)]

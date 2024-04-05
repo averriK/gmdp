@@ -8,9 +8,12 @@
 #' @param Bmax Double. Maximum width in m
 #' @param Bo Double. TSF Crest in m
 #' @return List
-#' @export
+#' @export fitModel.TdF
+#'
+#' @import data.table
 #'
 #' @examples
+#'
 fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL){
   on.exit(expr={rm(list = ls())}, add = TRUE)
 

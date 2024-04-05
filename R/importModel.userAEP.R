@@ -5,18 +5,17 @@
 #' @param path Path to the file
 #'
 #' @return AEPTable
-#' @export
+#' @export importModel.userAEP
 #'
-#' @examples
-#' @importFrom data.table rbindlist
-#' @importFrom data.table melt
-#' @importFrom data.table as.data.table
-#' @importFrom data.table setnames
-#' @importFrom data.table data.table
+#' @import data.table
 #' @importFrom stringr str_remove
 #' @importFrom readxl excel_sheets
 #' @importFrom readxl read_xlsx
 #' @importFrom stats predict
+#'
+#' @examples
+#'
+#'
 importModel.userAEP <- function(path = NULL,filename= "AEP.xlsx") {
   on.exit(expr = {
     rm(list = ls())

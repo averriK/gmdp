@@ -5,15 +5,17 @@
 #' @param gmdp.ini List with the following elements:
 #'
 #' @return A data.table with the following columns:
-#' @export
+#' @export importModel.oqRMw
 #'
-#' @examples
-#' @importFrom data.table fread
+#' @import data.table
 #' @importFrom stringr str_split
 #' @importFrom stringr str_replace
 #' @importFrom stringr str_remove
 #' @importFrom stringr str_detect
 #' @importFrom stringr str_extract
+#'
+#' #' @examples
+#'
 importModel.oqRMw <- function(path, gmdp.ini = NULL) {
   on.exit(expr = {
     rm(list = ls())

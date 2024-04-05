@@ -9,19 +9,21 @@
 #' @param OSF Double. Overshooing Factor
 #'
 #' @return Double. Maximum Shear Module (MPA)
-#' @export
+#' @export fitModel.TsF
+#'
+
+#'
+#' @import data.table
+#' @importFrom stats predict
+#' @importFrom randomForest randomForest
 #'
 #' @examples
 #'
-#' @importFrom data.table data.table
-#' @importFrom data.table between
-#' @importFrom stats predict
-#' @importFrom randomForest randomForest
 #'
 fitModel.TsF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   OK <- exists("SiteTable") & !is.null(SiteTable)
-  . <- .SD <- .N <- .I <- NULL
+
 
   # Check ranges
   if(!(POPo>=min(SiteTable$POP) & POPo<=max(SiteTable$POP))){

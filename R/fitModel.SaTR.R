@@ -9,18 +9,21 @@
 #' @return data table with columns a, b, c, sdLnA, R2, MSE, RMSE, fit
 #' @export
 #'
-#' @examples
-#' @importFrom data.table data.table
+
+#' @import data.table
 #' @importFrom stats lm
 #' @importFrom stats predict
 #' @importFrom stats qnorm
+#'
+#' @examples
+#'
 fitModel.SaTR <- function(x, TRmin = 100, TRmax = 10000) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
 
 
-  . <- .SD <- .N <- .I <- NULL
+
 
   if(any(is.na(x))){
     stop("The input data.table has NA values.")

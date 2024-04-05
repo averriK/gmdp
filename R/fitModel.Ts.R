@@ -5,14 +5,18 @@
 #' @param zm Vector. Layer Coordinates profile in m (vector)
 #'
 #' @return Double. Site's fundamental period Ts in seconds
-#' @export
+#' @export fitModel.Ts
+#'
+
+#' @import data.table
 #'
 #' @examples
+#'
 fitModel.Ts <-  function(VSm,hs,zm) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
-  . <- .SD <- .N <- .I <- NULL
+
   NL <- length(VSm)
   A <- vector(mode="double",length=NL-1)
   B <- vector(mode="double",length=NL-1)

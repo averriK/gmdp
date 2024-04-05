@@ -3,12 +3,14 @@
 #' @param Vs30 Double/Vector. Vs30 in m/s
 #'
 #' @return Character vector with Site Class.
-#' @export
+#' @export Vs30toSID
 #'
 #' @examples
+#'
 #' Vs30toSID(1500)
 #'
 #' Vs30toSID(c(120,790,3000,455))
+#'
 Vs30toSID <- function(Vs30){
   on.exit(expr = {
     rm(list = ls())

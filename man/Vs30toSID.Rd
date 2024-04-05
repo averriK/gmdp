@@ -16,7 +16,9 @@ Character vector with Site Class.
 Convert Vs30 in m/s to Site Class
 }
 \examples{
+
 Vs30toSID(1500)
 
 Vs30toSID(c(120,790,3000,455))
+
 }

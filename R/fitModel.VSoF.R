@@ -9,19 +9,20 @@
 #' @param WaterFraction Dowuble. Water Table in % as Hw=Water*Hs
 #'
 #' @return Double. Maximum Shear Module (MPA)
-#' @export
+#' @export fitModel.VSoF
 #'
-#' @examples
-#' @importFrom data.table data.table
-#' @importFrom data.table between
+
+#' @import data.table
 #' @importFrom stats predict
 #' @importFrom randomForest randomForest
+#'
+#' @examples
 #'
 fitModel.VSoF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   OK <- exists("SiteTable") & !is.null(SiteTable)
   stopifnot(OK)
-  . <- .SD <- .N <- .I <- NULL
+
 
   # Check ranges
   if(!(POPo>=min(SiteTable$POP) & POPo<=max(SiteTable$POP))){

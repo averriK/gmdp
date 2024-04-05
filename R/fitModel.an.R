@@ -6,20 +6,20 @@
 #' @param no Integer. Number of mode n=1..8
 #'
 #' @return Number. Cylinder roots
-#' @export
+#' @export fitModel.an
 #'
-#' @examples
-#' @importFrom data.table data.table
-#' @importFrom data.table between
+#' @import data.table
 #' @importFrom stats predict
 #' @importFrom randomForest randomForest
+#'
+#' @examples
 #'
 fitModel.an <- function(no=1,mo,lo,OSF=0.30){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   # OK <- exists("CylinderRootsModel") & !is.null(CylinderRootsModel)
   OK <- exists("CylinderRoots") & !is.null(CylinderRoots)
   stopifnot(OK)
-  . <- .SD <- .N <- .I <- NULL
+
 
   # Check ranges
   if(!(no %in% seq(min(CylinderRoots$n), max(CylinderRoots$n)) )){

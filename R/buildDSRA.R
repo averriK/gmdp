@@ -11,9 +11,10 @@
 #' @param IgnoreModelIntervals Boolean. If TRUE, the model intervals are ignored and the soil profile is built using the layer thicknesses provided in Hs.
 #'
 #' @return DSRA object
-#' @export
+#' @export buildDSRA
 #'
-#' @examples
+
+#' @import data.table
 #' @importFrom digest digest
 #' @importFrom stats runif
 #' @importFrom stats approx
@@ -23,12 +24,14 @@
 #' @importFrom stringr str_pad
 #' @importFrom utils data
 #'
+#' @examples
+#'
 buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribution=TRUE,POP = 0,IgnoreModelIntervals=TRUE){
 
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
-  . <- .SD <- .N <- .I <- NULL
+
 
 
   NL <- ceiling(Hs/h)

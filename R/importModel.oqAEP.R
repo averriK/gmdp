@@ -8,16 +8,16 @@
 #' @export
 #'
 #' @examples
-#' @importFrom data.table fread
-#' @importFrom data.table setnames
+#' @import data.table
 #' @importFrom stringr str_remove
 #' @importFrom stringr str_split
+#'
 importModel.oqAEP <- function(path,gmdp.ini) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
 
-  . <- .SD <- .N <- .I <- NULL
+
 
   AT <- data.table::data.table()
   PATH <- path

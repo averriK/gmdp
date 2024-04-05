@@ -9,19 +9,19 @@
 #' @param Vs30o Vs30 in m/s
 #' @param ITo Invesigation Time. ITo=50 yr
 #'
-#' @return GMDP
-#' @export
+#' @return list
+#' @export buildGMDP
+#' @import data.table
 #'
 #' @examples
-#' @importFrom data.table data.table
-#' @importFrom data.table setnames
+#'
 buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000, 2475,2500, 5000, 10000), ITo=50,Vs30o=760,Vs30_STEP = 25,configFile="gmdp.ini") {
   on.exit(expr = {
     # Clean Data
     if(exists("TEMP")){unlink(TEMP, recursive = TRUE)}
     rm(list = ls())
   }, add = TRUE)
-  . <- .SD <- .N <- .I <- NULL
+
 
 
   # ********************************************************************* ----

@@ -10,18 +10,17 @@
 #' @param Tno Period in seconds
 #'
 #' @return Table
-#' @export
-#'
+#' @export buildTable.Sa
+#' @import data.table
 #' @examples
-#' @importFrom data.table setnames
-#' @importFrom data.table data.table
+#'
 buildTable.Sa <- function(x,Tno=NULL,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),Vs30o=NULL,SIDo=NULL){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
 
 
-  . <- .SD <- .N <- .I <- NULL
+
 
 
   if(is.null(Tno)){

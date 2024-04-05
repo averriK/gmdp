@@ -30,7 +30,7 @@ buildGMDP(
 \item{configFile}{GMDP config file}
 }
 \value{
-GMDP
+list
 }
 \description{
 Title
