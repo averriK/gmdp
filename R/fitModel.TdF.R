@@ -17,33 +17,50 @@
 fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   . <- NULL
-  OK <- .checkFractions(GravelsFraction,SandsFraction,FinesFraction)
+  # browser()
+  OK <- .checkFractions(GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction)
   stopifnot(OK)
 
-  if(is.null(Bmax) & is.null(Bo) &is.null(lo)){
+  if(is.null(Bmax) && is.null(Bo) && is.null(lo)){
     stop("At least one of the following parameters must be defined: Bmax, Bo, lo")
   }
 
-  if(is.null(lo) & !is.null(Bmax) &!is.null(Bo)){
+  if(is.null(lo) && !is.null(Bmax) && !is.null(Bo)){
     lo <- round(Bo/Bmax,digits=2)
   }
 
+
+  if(GravelsFraction==100 && is.null(SandsFraction) &&is.null(FinesFraction)){
+    SandsFraction <- 0
+    FinesFraction <- 0
+  }
+
+  if(SandsFraction==100 && is.null(GravelsFraction) &&is.null(FinesFraction)){
+    GravelsFraction <- 0
+    FinesFraction <- 0
+  }
+
+  if(FinesFraction==100 && is.null(GravelsFraction) &&is.null(SandsFraction)){
+    GravelsFraction <- 0
+    SandsFraction <- 0
+
+  }
 
 
 
   #check lambda con CylinderRoots
   #check Hmax con SiteTable
 
-  if(is.null(GravelsFraction) & !is.null(SandsFraction) &!is.null(FinesFraction)){
+  if(is.null(GravelsFraction) && !is.null(SandsFraction) &&!is.null(FinesFraction)){
     GravelsFraction <- 100-SandsFraction-FinesFraction
   }
 
-  if(is.null(SandsFraction) & !is.null(GravelsFraction) &!is.null(FinesFraction)){
+  if(is.null(SandsFraction) && !is.null(GravelsFraction) &&!is.null(FinesFraction)){
     SandsFraction <- 100-GravelsFraction-FinesFraction
   }
 
 
-  if(is.null(FinesFraction) & !is.null(GravelsFraction) &!is.null(SandsFraction)){
+  if(is.null(FinesFraction) && !is.null(GravelsFraction) &&!is.null(SandsFraction)){
     FinesFraction <- 100-GravelsFraction-SandsFraction
   }
 
@@ -69,20 +86,20 @@ fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,San
   }
 
   # Check 2
-  if(!is.null(SandsFraction) & !(min(SandsFraction)>=0 & max(SandsFraction)<=100)){
+  if(!is.null(SandsFraction) && !(min(SandsFraction)>=0 & max(SandsFraction)<=100)){
     warning(sprintf("SandsFraction=%g  out of range.",mo))
     return(FALSE)
   }
 
   #
-  if(!is.null(GravelsFraction) &!(min(GravelsFraction)>=0 & max(GravelsFraction)<100)){
+  if(!is.null(GravelsFraction) && !(min(GravelsFraction)>=0 & max(GravelsFraction)<=100)){
     warning(sprintf("GravelsFraction=%g out of range.",lo))
     return(FALSE)
   }
 
 
   #
-  if(!is.null(FinesFraction) &!(min(FinesFraction)>=0 & max(FinesFraction)<100)){
+  if(!is.null(FinesFraction) && !(min(FinesFraction)>=0 & max(FinesFraction)<=100)){
     warning(sprintf("FinesFraction=%g out of range.",lo))
     return(FALSE)
   }
@@ -91,8 +108,8 @@ fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,San
   # Check 3
 
 
-  if(is.null(GravelsFraction) & !is.null(SandsFraction) &!is.null(FinesFraction)){
-    warning("GravelsFraction no defined. Assuming GravelsFraction <- 100-SandsFraction-FinesFraction")
+  if(is.null(GravelsFraction) && !is.null(SandsFraction) && !is.null(FinesFraction)){
+    message("GravelsFraction no defined. Assuming GravelsFraction <- 100-SandsFraction-FinesFraction")
     GravelsFraction <- 100-SandsFraction-FinesFraction
     # Check 4
     if(sum(c(GravelsFraction,SandsFraction,FinesFraction))!=100){
@@ -101,8 +118,8 @@ fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,San
     }
   }
 
-  if(is.null(SandsFraction) & !is.null(GravelsFraction) &!is.null(FinesFraction)){
-    warning("SandsFraction no defined. Assuming SandsFraction <- 100-GravelsFraction-FinesFraction")
+  if(is.null(SandsFraction) && !is.null(GravelsFraction) && !is.null(FinesFraction)){
+    message("SandsFraction no defined. Assuming SandsFraction <- 100-GravelsFraction-FinesFraction")
     SandsFraction <- 100-GravelsFraction-FinesFraction
     # Check 4
     if(sum(c(GravelsFraction,SandsFraction,FinesFraction))!=100){
@@ -111,8 +128,8 @@ fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,San
     }
   }
 
-  if(is.null(FinesFraction) & !is.null(GravelsFraction) &!is.null(SandsFraction)){
-    warning("FinesFraction no defined. Assuming FinesFraction <- 100-GravelsFraction-SandsFraction")
+  if(is.null(FinesFraction) && !is.null(GravelsFraction) && !is.null(SandsFraction)){
+    message("FinesFraction no defined. Assuming FinesFraction <- 100-GravelsFraction-SandsFraction")
     FinesFraction <- 100-GravelsFraction-SandsFraction
     # Check 4
     if(sum(c(GravelsFraction,SandsFraction,FinesFraction))!=100){

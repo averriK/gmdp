@@ -42,7 +42,7 @@ fitModel.GoF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFracti
     DATA <- DATA[between(Hs,floor((1-OSF)*Hso),floor((1+OSF)*Hso))]
   }
   # **************************************************************************
-  browser()
+  # browser()
   # **************************************************************************
 
   NEWDATA <- list(Hs=Hso,Gravels=GravelsFraction,Sands=SandsFraction,Fines=FinesFraction,POP=POPo,Water=WaterFraction)
