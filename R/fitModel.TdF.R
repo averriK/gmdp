@@ -18,10 +18,11 @@ fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,San
   on.exit(expr={rm(list = ls())}, add = TRUE)
   . <- NULL
   OK <- .checkFractions(GravelsFraction,SandsFraction,FinesFraction)
-
-  OK <- OK & (!is.null(lo) | (!is.null(Bmax)&!is.null(Bo)))
-
   stopifnot(OK)
+
+  if(is.null(Bmax) & is.null(Bo) &is.null(lo)){
+    stop("At least one of the following parameters must be defined: Bmax, Bo, lo")
+  }
 
   if(is.null(lo) & !is.null(Bmax) &!is.null(Bo)){
     lo <- round(Bo/Bmax,digits=2)
