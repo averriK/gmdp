@@ -7,6 +7,7 @@
 #' @param OSF Double. Overshooing Factor
 #' @param POPo Double. Pre-Overburden Pressure in kPa
 #' @param WaterFraction Dowuble. Water Table in % as Hw=Water*Hs
+#' @param level Double. Confidence level (0-1)
 #'
 #' @return Double. Maximum Shear Module (MPA)
 #'
@@ -18,7 +19,7 @@
 #'
 #' @examples
 #'
-fitModel.moF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0){
+fitModel.moF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0,level=0.95){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   OK <- exists("SiteTable") & !is.null(SiteTable)
   stopifnot(OK)
@@ -45,9 +46,15 @@ fitModel.moF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFracti
 
 
   NEWDATA <- list(Hs=Hso,Gravels=GravelsFraction,Sands=SandsFraction,Fines=FinesFraction,POP=POPo,Water=WaterFraction)
-
-  MODEL <- randomForest::randomForest(mo~Hs+Gravels+Sands+Fines+POP+Water,data=DATA,importance=FALSE,proximity=FALSE)
-  VALUE <- stats::predict(MODEL,newdata=NEWDATA)
-  return(VALUE)
+  Y <- DATA$mo
+  X <- DATA[,c("Hs","Gravels","Sands","Fines","POP","Water")]
+  MODEL <- quantregForest::quantregForest(x=X,y=Y,nthread=8)
+  VALUE <- predict(MODEL,newdata=NEWDATA, what = level)
+  MEAN <- predict(MODEL,newdata=NEWDATA, what = mean)
+  MEDIAN <- predict(MODEL,newdata=NEWDATA, what = 0.5)
+  SD <- predict(MODEL,newdata=NEWDATA, what = sd)
+  UPPER <- predict(MODEL, newdata=NEWDATA,  what=max(level,abs(1-level)))
+  LOWER <- predict(MODEL, newdata=NEWDATA,  what=min(level,abs(1-level)))
+  return(list(value=VALUE,mean=MEAN,median=MEDIAN,upper=UPPER,lower=LOWER,sd=SD,level=level))
 
 }

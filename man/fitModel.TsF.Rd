@@ -11,7 +11,8 @@ fitModel.TsF(
   FinesFraction = NULL,
   OSF = 0.3,
   POPo = 0,
-  WaterFraction = 0
+  WaterFraction = 0,
+  level = 0.95
 )
 
 fitModel.TsF(
@@ -21,7 +22,8 @@ fitModel.TsF(
   FinesFraction = NULL,
   OSF = 0.3,
   POPo = 0,
-  WaterFraction = 0
+  WaterFraction = 0,
+  level = 0.95
 )
 }
 \arguments{
@@ -38,6 +40,8 @@ fitModel.TsF(
 \item{POPo}{Double. Pre-Overburden Pressure in kPa}
 
 \item{WaterFraction}{Dowuble. Water Table in \% as Hw=Water*Hs}
+
+\item{level}{Double. Confidence level (0-1)}
 }
 \value{
 Double. Maximum Shear Module (MPA)

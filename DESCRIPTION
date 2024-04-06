@@ -18,6 +18,7 @@ Imports:
     readxl,
     stats,
     randomForest,
+    quantregForest,
     digest,
     triangle,
     utils

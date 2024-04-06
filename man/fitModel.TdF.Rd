@@ -11,7 +11,8 @@ fitModel.TdF(
   Bo = NULL,
   GravelsFraction = NULL,
   SandsFraction = NULL,
-  FinesFraction = NULL
+  FinesFraction = NULL,
+  level = 0.95
 )
 }
 \arguments{

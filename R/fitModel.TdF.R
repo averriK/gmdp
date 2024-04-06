@@ -11,10 +11,12 @@
 #' @export fitModel.TdF
 #'
 #' @import data.table
+#' @import quantregForest
+#' @importFrom stats predict
 #'
 #' @examples
 #'
-fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL){
+fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,level=0.95){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   . <- NULL
   # browser()
@@ -64,11 +66,13 @@ fitModel.TdF <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,GravelsFraction=NULL,San
     FinesFraction <- 100-GravelsFraction-SandsFraction
   }
 
-  GoF <- fitModel.GoF(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction)
+  # Mean Values - temporary solution.
+  # replace this code with simulation for all values and quantile estimation
 
-  VSoF <- fitModel.VSoF(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction)
-  moF <- fitModel.moF(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction)
-  an <- fitModel.an(mo=moF,lo=lo)
+  GoF <- fitModel.GoF(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction,level=level)[["mean"]]
+  VSoF <- fitModel.VSoF(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction,level=level)[["mean"]]
+  moF <- fitModel.moF(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction,level=level)[["mean"]]
+  an <- fitModel.an(mo=moF,lo=lo,level=level)
 
   Ts <- (4*pi*Hmax/(an*(2 - moF)*VSoF))
   return(list(Hmax=Hmax,Bmax=Bmax,Bo=Bo,lo=lo,Go=GoF,VSo=VSoF,mo=moF,an=an,Ts=Ts))

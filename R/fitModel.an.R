@@ -4,6 +4,7 @@
 #' @param lo Double. Truncation Ratio lo<=0.5. no=0: no truncation. (bo=0)
 #' @param OSF Double. Overshooting Factor. Default value: 0.30 (30%)
 #' @param no Integer. Number of mode n=1..8
+#' @param level Double. Confidence level (0-1)
 #'
 #' @return Number. Cylinder roots
 #' @export fitModel.an
@@ -14,7 +15,7 @@
 #'
 #' @examples
 #'
-fitModel.an <- function(no=1,mo,lo,OSF=0.30){
+fitModel.an <- function(no=1,mo,lo,OSF=0.30,level=0.95){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   # OK <- exists("CylinderRootsModel") & !is.null(CylinderRootsModel)
   OK <- exists("CylinderRoots") & !is.null(CylinderRoots)

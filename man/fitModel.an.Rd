@@ -4,7 +4,7 @@
 \alias{fitModel.an}
 \title{Title}
 \usage{
-fitModel.an(no = 1, mo, lo, OSF = 0.3)
+fitModel.an(no = 1, mo, lo, OSF = 0.3, level = 0.95)
 }
 \arguments{
 \item{no}{Integer. Number of mode n=1..8}
@@ -14,6 +14,8 @@ fitModel.an(no = 1, mo, lo, OSF = 0.3)
 \item{lo}{Double. Truncation Ratio lo<=0.5. no=0: no truncation. (bo=0)}
 
 \item{OSF}{Double. Overshooting Factor. Default value: 0.30 (30\%)}
+
+\item{level}{Double. Confidence level (0-1)}
 }
 \value{
 Number. Cylinder roots
