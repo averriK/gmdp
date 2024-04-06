@@ -16,6 +16,8 @@ importModel.oqAEP <- function(path,gmdp.ini) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
+  . <- NULL
+
 
 
 

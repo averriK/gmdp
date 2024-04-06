@@ -14,7 +14,7 @@
 #' @importFrom stringr str_detect
 #' @importFrom stringr str_extract
 #'
-#' #' @examples
+#' @examples
 #'
 importModel.oqRMw <- function(path, gmdp.ini = NULL) {
   on.exit(expr = {

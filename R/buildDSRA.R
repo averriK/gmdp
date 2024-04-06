@@ -31,6 +31,7 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
+  . <- NULL
 
 
 

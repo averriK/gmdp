@@ -21,6 +21,7 @@ fitModel.SaTR <- function(x, TRmin = 100, TRmax = 10000) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
+  . <- NULL
 
 
 

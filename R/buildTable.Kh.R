@@ -7,7 +7,6 @@
 #' @param po quantiles
 #' @param engine c("flextable")
 #' @param TRo return periods in years
-#' @param Vs30o Vs30 in m/s
 #' @param SIDo Site ID
 #'
 #' @return Table
@@ -19,31 +18,20 @@
 #'
 
 
-buildTable.Kh <- function(x,Tso,Dao,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),Vs30o=NULL,SIDo=NULL){
+buildTable.Kh <- function(GMDP,Tso,Dao,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),SIDo=NULL){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
+  . <- NULL
+  DT <- copy(GMDP$KmaxTable)
 
-  # buildTable.Kmax(x=GMDP,Vs30o=760,Tso=0.4,Dao=1.0)
-  DT <- x$KmaxTable
+  DT <- DT[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
 
-DT <- DT[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
-
-  if(!is.null(Vs30o)){
-    SIDo <- Vs30toSID(Vs30o)
-    message(sprintf("Building Table for Vs30 %f m/s",Vs30o))
-    DT <- DT[Vs30 %in% Vs30o,-c("Vref")]
-  }
-
-  if(!is.null(SIDo) & is.null(Vs30o)){
+  if(!is.null(SIDo) ){
     message(sprintf("Building Table for SID %s",SIDo))
-    DT <-DT[Vs30==Vref & SID %in% SIDo,-c("Vref")]
+    DT <-DT[ SID %in% SIDo,-c("SIDo","Vref")]
   }
 
-  if(is.null(Vs30o) & is.null(SIDo)){
-    Vs30o <- DT[Vs30==Vref]$Vs30 |> unique()
-    DT <-DT[Vs30 %in% Vs30o,-c("Vref")]
-  }
 
 
 
@@ -58,22 +46,19 @@ DT <- DT[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
   DT <- DT[TR %in% TRo][order(TR)]
 
   # Check final rows
-  if(nrow(DT)==0){
-    return(NULL)
+  if(nrow(DT)>0){
+    # Predict Ranges
+    DT <- DT[,.predict.Kh(x=.SD,Tso=Tso,Dao=Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
+    data.table::setnames(DT,old=c("TR"),new=c("TR[yr]"))
+    data.table::setnames(DT,old=c("Vs30"),new=c("Vs30[m/s]"))
+    data.table::setnames(DT,old=c("Kmax"),new=c("Kmax[g]"))
+    data.table::setnames(DT,old=c("PGA"),new=c("PGA[g]"))
+    data.table::setnames(DT,old=c("Kh"),new=c("Kh[%]"))
+    data.table::setnames(DT,old=c("Da"),new=c("Da[cm]"))
+    data.table::setnames(DT,old=c("Ts"),new=c("Ts[s]"))
+  } else {
+    message(sprintf("Table with %d rows",nrow(DT)))
   }
-
-
-  # Predict Ranges
-
-  DT <- DT[,.predict.Kh(x=.SD,Tso=Tso,Dao=Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
-  data.table::setnames(DT,old=c("TR"),new=c("TR[yr]"))
-  data.table::setnames(DT,old=c("Vs30"),new=c("Vs30[m/s]"))
-  data.table::setnames(DT,old=c("Kmax"),new=c("Kmax[g]"))
-  data.table::setnames(DT,old=c("PGA"),new=c("PGA[g]"))
-  data.table::setnames(DT,old=c("Kh"),new=c("Kh[%]"))
-  data.table::setnames(DT,old=c("Da"),new=c("Da[cm]"))
-  data.table::setnames(DT,old=c("Ts"),new=c("Ts[s]"))
-
   return(DT)
 }
 
@@ -101,11 +86,4 @@ DT <- DT[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
   # DT <- data.table::rbindlist(list(x,data.table::data.table(Ts=Tso,Da=Dao,Kmax=yp)),use.names = TRUE)
   return(data.table::data.table(Ts=Tso,Da=Dao,Kh=round(yp,digits=1),PGA=round(PGA,digits = 3),Kmax=round(yp*PGA/100,digits=3)))
 }
-#
-# library(caret) |> suppressPackageStartupMessages()
-# library(randomForest) |> suppressPackageStartupMessages()
-# RF arroja mejores resultados con 10-folds (datasets mas chicos) que con 3-folds (dataset mas grandes)
-# https://stats.stackexchange.com/questions/27730/choice-of-k-in-k-fold-cross-validation
-# https://stats.stackexchange.com/questions/52274/how-to-choose-a-predictive-model-after-k-fold-cross-validation
-
 

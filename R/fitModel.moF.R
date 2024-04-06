@@ -22,6 +22,7 @@ fitModel.moF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFracti
   on.exit(expr={rm(list = ls())}, add = TRUE)
   OK <- exists("SiteTable") & !is.null(SiteTable)
   stopifnot(OK)
+  . <- NULL
 
 
   # Check ranges

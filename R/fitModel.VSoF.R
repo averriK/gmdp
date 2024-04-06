@@ -20,6 +20,8 @@
 #'
 fitModel.VSoF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0){
   on.exit(expr={rm(list = ls())}, add = TRUE)
+  . <- NULL
+
   OK <- exists("SiteTable") & !is.null(SiteTable)
   stopifnot(OK)
 

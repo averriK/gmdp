@@ -19,6 +19,7 @@ buildTable.Sa <- function(x,Tno=NULL,size=12,po=c(0.16,0.50,0.84),engine="flexta
     rm(list = ls())
   }, add = TRUE)
 
+  . <- NULL
 
 
 

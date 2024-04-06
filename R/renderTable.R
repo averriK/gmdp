@@ -5,7 +5,7 @@
 #' @param size Numeric. Font size.
 #' @param x Data frame.
 #'
-#' @return
+#' @return flextable
 #' @export renderTable
 #'
 #' @importFrom flextable flextable

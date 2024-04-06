@@ -5,20 +5,17 @@
 \title{Build Seismic Coefficient Table (Kmax) in g}
 \usage{
 buildTable.Kh(
-  x,
+  GMDP,
   Tso,
   Dao,
   size = 12,
   po = c(0.16, 0.5, 0.84),
   engine = "flextable",
   TRo = c(500, 1000, 2500, 5000, 10000),
-  Vs30o = NULL,
   SIDo = NULL
 )
 }
 \arguments{
-\item{x}{GMDP object}
-
 \item{Tso}{Ts in seconds}
 
 \item{Dao}{Da in cm}
@@ -31,9 +28,9 @@ buildTable.Kh(
 
 \item{TRo}{return periods in years}
 
-\item{Vs30o}{Vs30 in m/s}
-
 \item{SIDo}{Site ID}
+
+\item{x}{GMDP object}
 }
 \value{
 Table

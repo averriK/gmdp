@@ -20,6 +20,9 @@
 #'
 fitModel.TsF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0){
   on.exit(expr={rm(list = ls())}, add = TRUE)
+
+  . <- NULL
+
   OK <- exists("SiteTable") & !is.null(SiteTable)
 
 
@@ -34,7 +37,7 @@ fitModel.TsF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFracti
                      & between(Gravels,floor((1-OSF)*GravelsFraction),floor((1+OSF)*GravelsFraction))
                      & between(Sands,  floor((1-OSF)*SandsFraction),  floor((1+OSF)*SandsFraction))
                      & between(Fines,  floor((1-OSF)*FinesFraction),  floor((1+OSF)*FinesFraction))
-                     ,.(Hs,POP,Go,mo,VSo,Gravels,Sands,Fines,Water)] |> unique()
+                     ,list(Hs,POP,Go,mo,VSo,Gravels,Sands,Fines,Water)] |> unique()
 
 
   if(nrow(DATA)>1000){

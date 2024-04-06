@@ -13,6 +13,9 @@ renderTable(x, fontname = "Helvetica", size = 10)
 
 \item{size}{Numeric. Font size.}
 }
+\value{
+flextable
+}
 \description{
 Title
 }

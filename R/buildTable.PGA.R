@@ -19,6 +19,7 @@ buildTable.PGA <- function(x,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
+  . <- NULL
 
 
 

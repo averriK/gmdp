@@ -6,6 +6,7 @@
 #' @return Vs30 in m/s
 #' @export SIDtoVs30
 #' @import data.table
+#'
 #' @examples
 #'
 #' SIDtoVs30("A")
