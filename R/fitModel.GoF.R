@@ -34,7 +34,7 @@ fitModel.GoF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFracti
                      & between(Gravels,floor((1-OSF)*GravelsFraction),floor((1+OSF)*GravelsFraction))
                      & between(Sands,  floor((1-OSF)*SandsFraction),  floor((1+OSF)*SandsFraction))
                      & between(Fines,  floor((1-OSF)*FinesFraction),  floor((1+OSF)*FinesFraction))
-                     ,.(Hs,POP,Go,mo,VSo,Gravels,Sands,Fines,Water)] |> unique()
+                     ,list(Hs,POP,Go,mo,VSo,Gravels,Sands,Fines,Water)] |> unique()
 
 
 

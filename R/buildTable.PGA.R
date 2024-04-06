@@ -23,7 +23,7 @@ buildTable.PGA <- function(x,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo
 
 
 
-  DT <- x$UHSTable[,.(TR,p,PGA,Vs30,Vref,SID)] |> unique()
+  DT <- x$UHSTable[,list(TR,p,PGA,Vs30,Vref,SID)] |> unique()
   DT[,PGA:=round(PGA,digits=3)]
 
 

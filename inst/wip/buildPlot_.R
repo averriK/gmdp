@@ -43,7 +43,7 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- AEPTable$pID |> unique()
   if(is.null(pID_TARGET)) pID_TARGET <- "+50%"
 
-  DATA <- AEPTable[SN == SN_TARGET & Tn==Tn_TARGET &  (pID %in% pID_SET),.(AEP,Sa,pID)][order(pID)][Sa>0.0001]
+  DATA <- AEPTable[SN == SN_TARGET & Tn==Tn_TARGET &  (pID %in% pID_SET),list(AEP,Sa,pID)][order(pID)][Sa>0.0001]
 
 
   setnames(DATA,old=c("Sa","AEP","pID"),new=c("X","Y","ID"))
@@ -77,8 +77,8 @@ buildPlot <- function(suffix, ...) {
   # if(is.null(pID_SET)) pID_SET <- AEPTable$pID |> unique()
   # if(is.null(pID_TARGET)) pID_TARGET <- "+50%"
 
-  DATA <- DHT[SN %in% SN_TARGET & TR==TR_TARGET,.(Mw,R,p,Tn,SN)]
-  DATA <- DATA[,.(p=approx(x=as.double(Tn),y=p,xout = Tn_TARGET,ties = "ordered")$y),by=.(Mw,R)]
+  DATA <- DHT[SN %in% SN_TARGET & TR==TR_TARGET,list(Mw,R,p,Tn,SN)]
+  DATA <- DATA[,list(p=approx(x=as.double(Tn),y=p,xout = Tn_TARGET,ties = "ordered")$y),by=.(Mw,R)]
   if(nrow(DATA)==0) return(NULL)
   BINS <- input$bins
   A3D <- .buildA3D(DATA,bins=input$bins,Rmax=R_MAX,Mmax=M_MAX)
@@ -115,7 +115,7 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- SaTR$TR |> unique()
-  DATA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & TR== TR_TARGET & SID %in% SID_SET][,.(Tn,Sa,SID)]
+  DATA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & TR== TR_TARGET & SID %in% SID_SET][,list(Tn,Sa,SID)]
 
   setnames(DATA,old=c("Tn","Sa","SID"),new=c("X","Y","ID"))
   pIDfix <- .pidFIX(pID_TARGET)
@@ -154,8 +154,8 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- SaTR$TR |> unique()
-  # DATA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID== SID_TARGET][,.(Tn,Sa,TR)]
-  DATA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID== SID_TARGET & TR %in% TR_SET][,.(Tn,Sa,TR)]
+  # DATA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID== SID_TARGET][,list(Tn,Sa,TR)]
+  DATA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID== SID_TARGET & TR %in% TR_SET][,list(Tn,Sa,TR)]
 
   setnames(DATA,old=c("Tn","Sa","TR"),new=c("X","Y","ID"))
   pIDfix <- .pidFIX(pID_TARGET)
@@ -192,7 +192,7 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- SaTR$TR |> unique()
-  DATA <- SaTR[pID %in% pID_SET & SN == SN_TARGET & SID== SID_TARGET & TR==TR_TARGET][,.(Tn,Sa,pID)]
+  DATA <- SaTR[pID %in% pID_SET & SN == SN_TARGET & SID== SID_TARGET & TR==TR_TARGET][,list(Tn,Sa,pID)]
 
   setnames(DATA,old=c("Tn","Sa","pID"),new=c("X","Y","ID"))
   pIDfix <- .pidFIX(pID_TARGET)
@@ -228,16 +228,16 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(!exists("CDA")) .setStandardsAEP()
-  AEP <- CDA[,.(RC,Category,TR=TR_OBE)]
+  AEP <- CDA[,list(RC,Category,TR=TR_OBE)]
 
   # set DATA ----
   DT <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID == SID_TARGET]
   DATA <- NULL
   for(rc in seq_along(AEP$RC)){
-    AUX <- DT[TR==AEP[RC==rc]$TR,.(Tn,Sa,RC=rc)]
+    AUX <- DT[TR==AEP[RC==rc]$TR,list(Tn,Sa,RC=rc)]
     DATA <- rbindlist(list(DATA,AUX))
   }
-  DATA <- AEP[,.(RC,Category)][DATA,on="RC"]
+  DATA <- AEP[,list(RC,Category)][DATA,on="RC"]
   pIDfix <- .pidFIX(pID_TARGET)
   setnames(DATA,old=c("Tn","Sa","Category"),new=c("X","Y","ID"))
 
@@ -270,16 +270,16 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(!exists("CDA")) .setStandardsAEP()
-  AEP <- CDA[,.(RC,Category,TR=TR_MDE)]
+  AEP <- CDA[,list(RC,Category,TR=TR_MDE)]
 
   # set DATA ----
   DT <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID == SID_TARGET]
   DATA <- NULL
   for(rc in seq_along(AEP$RC)){
-    AUX <- DT[TR==AEP[RC==rc]$TR,.(Tn,Sa,RC=rc)]
+    AUX <- DT[TR==AEP[RC==rc]$TR,list(Tn,Sa,RC=rc)]
     DATA <- rbindlist(list(DATA,AUX))
   }
-  DATA <- AEP[,.(RC,Category)][DATA,on="RC"]
+  DATA <- AEP[,list(RC,Category)][DATA,on="RC"]
   pIDfix <- .pidFIX(pID_TARGET)
   setnames(DATA,old=c("Tn","Sa","Category"),new=c("X","Y","ID"))
 
@@ -313,16 +313,16 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(!exists("GISTM")) .setStandardsAEP()
-  AEP <- GISTM[,.(RC,Category,TR=TR_OBE)]
+  AEP <- GISTM[,list(RC,Category,TR=TR_OBE)]
 
   # set DATA ----
   DT <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID == SID_TARGET]
   DATA <- NULL
   for(rc in seq_along(AEP$RC)){
-    AUX <- DT[TR==AEP[RC==rc]$TR,.(Tn,Sa,RC=rc)]
+    AUX <- DT[TR==AEP[RC==rc]$TR,list(Tn,Sa,RC=rc)]
     DATA <- rbindlist(list(DATA,AUX))
   }
-  DATA <- AEP[,.(RC,Category)][DATA,on="RC"]
+  DATA <- AEP[,list(RC,Category)][DATA,on="RC"]
   pIDfix <- .pidFIX(pID_TARGET)
   setnames(DATA,old=c("Tn","Sa","Category"),new=c("X","Y","ID"))
 
@@ -355,16 +355,16 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(!exists("GISTM")) .setStandardsAEP()
-  AEP <- GISTM[,.(RC,Category,TR=TR_MDE)]
+  AEP <- GISTM[,list(RC,Category,TR=TR_MDE)]
 
   # set DATA ----
   DT <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID == SID_TARGET]
   DATA <- NULL
   for(rc in seq_along(AEP$RC)){
-    AUX <- DT[TR==AEP[RC==rc]$TR,.(Tn,Sa,RC=rc)]
+    AUX <- DT[TR==AEP[RC==rc]$TR,list(Tn,Sa,RC=rc)]
     DATA <- rbindlist(list(DATA,AUX))
   }
-  DATA <- AEP[,.(RC,Category)][DATA,on="RC"]
+  DATA <- AEP[,list(RC,Category)][DATA,on="RC"]
   pIDfix <- .pidFIX(pID_TARGET)
   setnames(DATA,old=c("Tn","Sa","Category"),new=c("X","Y","ID"))
 
@@ -398,16 +398,16 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(!exists("ANCOLD")) .setStandardsAEP()
-  AEP <- ANCOLD[,.(RC,Category,TR=TR_OBE)]
+  AEP <- ANCOLD[,list(RC,Category,TR=TR_OBE)]
 
   # set DATA ----
   DT <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID == SID_TARGET]
   DATA <- NULL
   for(rc in seq_along(AEP$RC)){
-    AUX <- DT[TR==AEP[RC==rc]$TR,.(Tn,Sa,RC=rc)]
+    AUX <- DT[TR==AEP[RC==rc]$TR,list(Tn,Sa,RC=rc)]
     DATA <- rbindlist(list(DATA,AUX))
   }
-  DATA <- AEP[,.(RC,Category)][DATA,on="RC"]
+  DATA <- AEP[,list(RC,Category)][DATA,on="RC"]
   pIDfix <- .pidFIX(pID_TARGET)
   setnames(DATA,old=c("Tn","Sa","Category"),new=c("X","Y","ID"))
 
@@ -440,16 +440,16 @@ buildPlot <- function(suffix, ...) {
   if(is.null(pID_SET)) pID_SET <- SaTR$pID |> unique()
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(!exists("ANCOLD")) .setStandardsAEP()
-  AEP <- ANCOLD[,.(RC,Category,TR=TR_MDE)]
+  AEP <- ANCOLD[,list(RC,Category,TR=TR_MDE)]
 
   # set DATA ----
   DT <- SaTR[pID==pID_TARGET & SN == SN_TARGET & SID == SID_TARGET]
   DATA <- NULL
   for(rc in seq_along(AEP$RC)){
-    AUX <- DT[TR==AEP[RC==rc]$TR,.(Tn,Sa,RC=rc)]
+    AUX <- DT[TR==AEP[RC==rc]$TR,list(Tn,Sa,RC=rc)]
     DATA <- rbindlist(list(DATA,AUX))
   }
-  DATA <- AEP[,.(RC,Category)][DATA,on="RC"]
+  DATA <- AEP[,list(RC,Category)][DATA,on="RC"]
   pIDfix <- .pidFIX(pID_TARGET)
   setnames(DATA,old=c("Tn","Sa","Category"),new=c("X","Y","ID"))
 
@@ -487,11 +487,11 @@ buildPlot <- function(suffix, ...) {
   R_GRID <- seq(from=min(DT$R),to=Rmax,length.out=bins)
   # Mw_GRID <- seq(from=min(DT$Mw),to=Mmax,length.out=length(R_GRID))
   Mw_GRID <- seq(from=min(DT$Mw),to=Mmax,length.out=bins)
-  DT <- DT[,.(
+  DT <- DT[,list(
     R=approx(x=R,y=p,xout=R_GRID,ties = "ordered")$x,
     p=approx(x=R,y=p,xout=R_GRID,ties = "ordered")$y),by=.(Mw)]
 
-  DT <- DT[,.(
+  DT <- DT[,list(
     Mw=approx(x=Mw,y=p,xout=Mw_GRID,ties = "ordered")$x,
     p=approx(x=Mw,y=p,xout=Mw_GRID,ties = "ordered")$y),by=.(R)]
 

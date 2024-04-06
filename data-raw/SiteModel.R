@@ -13,7 +13,7 @@ if(!exists("cl")) {
   registerDoParallel(cl)
 }
 
-DT.train <- SiteTable[Hw==0,.(Hs,Go,mo,VSo,Gravels,Sands,Fines)] |> unique()
+DT.train <- SiteTable[Hw==0,list(Hs,Go,mo,VSo,Gravels,Sands,Fines)] |> unique()
 
 ## ----
 SiteModel.GoF <- train(Go~Hs+Gravels+Sands+Fines,

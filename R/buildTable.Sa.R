@@ -30,7 +30,7 @@ buildTable.Sa <- function(x,Tno=NULL,size=12,po=c(0.16,0.50,0.84),engine="flexta
   }
 
   DT <- x$UHSTable
-  DT <- DT[Tn %in% Tno][,.(Tn,TR,p,Sa=round(Sa,digits = 3),Vs30,Vred,SID)] |> unique()
+  DT <- DT[Tn %in% Tno][,list(Tn,TR,p,Sa=round(Sa,digits = 3),Vs30,Vred,SID)] |> unique()
   data.table::setnames(DT,old=c("Tn"),new=c("Tn[s]"))
   DT[,Sa:=round(Sa,digits=3)]
 

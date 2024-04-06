@@ -18,14 +18,14 @@
 #'
 
 
-buildTable.Kh <- function(GMDP,Tso,Dao,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),SIDo=NULL){
+buildTable.Kh <- function(x,Tso,Dao,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),SIDo=NULL){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
   . <- NULL
-  DT <- copy(GMDP$KmaxTable)
+  DT <- copy(x$KmaxTable)
 
-  DT <- DT[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
+  DT <- DT[,list(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
 
   if(!is.null(SIDo) ){
     message(sprintf("Building Table for SID %s",SIDo))

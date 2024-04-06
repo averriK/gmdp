@@ -105,7 +105,7 @@ importModel.oqRMw <- function(path, gmdp.ini = NULL) {
     nCOL <- "p"
     data.table::setnames(DT, old = oCOL, new = nCOL)
 
-    # DT <- DT[,.(Mw,R,p,rlz,Tn,AEP,TR,LAT,LON,SN)]
+    # DT <- DT[,list(Mw,R,p,rlz,Tn,AEP,TR,LAT,LON,SN)]
     DHT <- data.table::rbindlist(list(DHT, DT))
   }
   return(DHT)

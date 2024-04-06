@@ -360,8 +360,8 @@ buildTable <- function(suffix, ...) {
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- SaTR$TR |> unique()
 
-  SA <-SaTR[pID==pID_TARGET & SN == SN_TARGET & Tn==0 &  SID %in% SID_SET & TR %in% TR_SET,.(
-    PGA=round(Sa,digits = 3)),.(SID,TR)]
+  SA <-SaTR[pID==pID_TARGET & SN == SN_TARGET & Tn==0 &  SID %in% SID_SET & TR %in% TR_SET,list(
+    PGA=round(Sa,digits = 3)),list(SID,TR)]
   DT <- reshape(SA,idvar =c("SID"), timevar = "TR", direction = "wide")
   setnames(DT,old = "SID",new="SC")
   COL <- colnames(DT)
@@ -378,8 +378,8 @@ buildTable <- function(suffix, ...) {
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- SaTR$TR |> unique()
 
-  SA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & Tn==0 & SID %in% SID_SET & TR %in% TR_SET,.(
-    AF=round(AF,digits = 3)),.(SID,TR)]
+  SA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & Tn==0 & SID %in% SID_SET & TR %in% TR_SET,list(
+    AF=round(AF,digits = 3)),list(SID,TR)]
   DT1 <- reshape(SA,idvar =c("SID"), timevar = "TR", direction = "wide")
   setnames(DT1,old = "SID",new="SC")
   COL <- colnames(DT1)
@@ -398,8 +398,8 @@ buildTable <- function(suffix, ...) {
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- SaTR$TR |> unique()
 
-  SA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & Tn==Tn_TARGET & SID %in% SID_SET & TR %in% TR_SET,.(
-    AF=round(AF,digits = 3)),.(SID,TR,Tn)]
+  SA <- SaTR[pID==pID_TARGET & SN == SN_TARGET & Tn==Tn_TARGET & SID %in% SID_SET & TR %in% TR_SET,list(
+    AF=round(AF,digits = 3)),list(SID,TR,Tn)]
   DT1 <- reshape(SA,idvar =c("SID","Tn"), timevar = "TR", direction = "wide")
   setnames(DT1,old = "SID",new="SC")
   COL <- colnames(DT1)
@@ -417,7 +417,7 @@ buildTable <- function(suffix, ...) {
   if(is.null(TR_SET)) TR_SET <- SaTR$TR |> unique()
   SA <- .interpolateSaTR( t=Tn_TARGET,SaTR=SaTR[pID==pID_TARGET & SN == SN_TARGET & SID %in% SID_SET & TR %in% TR_SET])
 
-  SA <- SA[,.(Sa=round(Sa,digits = 3)),.(SID,TR,Tn)]
+  SA <- SA[,list(Sa=round(Sa,digits = 3)),list(SID,TR,Tn)]
   DT <- reshape(SA,idvar =c("SID","Tn"), timevar = "TR", direction = "wide")
   setnames(DT,old = "SID",new="SC")
   COL <- colnames(DT)
@@ -431,8 +431,8 @@ buildTable <- function(suffix, ...) {
   RMwTable <- z
   SN_TARGET <- SN
   Tn_TARGET <- Tn
-  DATA <- RMwTable[SN == SN_TARGET,.(TR,Mw,R,p,Tn,SN)]
-  DATA <- DATA[,.(p=approx(x=as.double(Tn),y=p,xout = as.double(Tn_TARGET),ties = mean)$y),by=.(TR,Mw,R,SN)]
+  DATA <- RMwTable[SN == SN_TARGET,list(TR,Mw,R,p,Tn,SN)]
+  DATA <- DATA[,list(p=approx(x=as.double(Tn),y=p,xout = as.double(Tn_TARGET),ties = mean)$y),by=.(TR,Mw,R,SN)]
   TR <- RMwTable$TR |> unique()
   DT <- data.table()
   for(tr in TR){
@@ -458,7 +458,7 @@ buildTable <- function(suffix, ...) {
   if(is.null(SID_SET)) SID_SET <- DnTR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- DnTR$TR |> unique()
   DT <- .interpolateDnTR(k=ky_TARGET,ts=Ts_TARGET,DnTR=DnTR[pID==pID_TARGET & SN == SN_TARGET & SID %in% SID_SET & TR %in% TR_SET])
-  DT <- DT[,.(Dn=round(Dn,digits=1),TR,Ts,SID)]
+  DT <- DT[,list(Dn=round(Dn,digits=1),TR,Ts,SID)]
   DT <- reshape(DT,idvar =c("SID","Ts"), timevar = "TR", direction = "wide")
   setnames(DT,old = c("SID"),new=c("NEHRP"))
   COL <- colnames(DT)
@@ -480,7 +480,7 @@ buildTable <- function(suffix, ...) {
   if(is.null(SID_SET)) SID_SET <- BM19TR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- BM19TR$TR |> unique()
   DT <- .interpolateBM19TR(ts=Ts_TARGET,BM19TR=BM19TR[SN == SN_TARGET & SID %in% SID_SET & TR %in% TR_SET])
-  DT <- DT[,.(Ts,TR,SID,Da=Da_TARGET,Kmax=round(exp((-a+sqrt(a^2-0.98*(b+LnDa-e)))/0.49),4))]
+  DT <- DT[,list(Ts,TR,SID,Da=Da_TARGET,Kmax=round(exp((-a+sqrt(a^2-0.98*(b+LnDa-e)))/0.49),4))]
   DT <- reshape(DT,idvar =c("SID","Da","Ts"), timevar ="TR", direction = "wide")
   setnames(DT,old = c("SID"),new=c("NEHRP"))
   COL <- colnames(DT)
@@ -504,10 +504,10 @@ buildTable <- function(suffix, ...) {
   if(is.null(SID_SET)) SID_SET <- SaTR$SID |> unique()
   if(is.null(TR_SET)) TR_SET <- SaTR$TR |> unique()
   DT <- .interpolateBM19TR(ts=Ts_TARGET,BM19TR=BM19TR[SN == SN_TARGET & SID %in% SID_SET & TR %in% TR_SET])
-  DT <- DT[,.(Ts,TR,SID,Da=Da_TARGET,Kmax=round(exp((-a+sqrt(a^2-0.98*(b+LnDa-e)))/0.49),4))]
-  SA <-SaTR[pID==pID_TARGET & SN == SN_TARGET & Tn==0 ,.(PGA=round(Sa,digits = 3)),.(SID,TR)]
+  DT <- DT[,list(Ts,TR,SID,Da=Da_TARGET,Kmax=round(exp((-a+sqrt(a^2-0.98*(b+LnDa-e)))/0.49),4))]
+  SA <-SaTR[pID==pID_TARGET & SN == SN_TARGET & Tn==0 ,list(PGA=round(Sa,digits = 3)),list(SID,TR)]
 
-  DT <- SA[DT,on=c("SID","TR")][,.(SID,TR,Ts,Da,Kh=round(100*Kmax/PGA,digits = 0))]
+  DT <- SA[DT,on=c("SID","TR")][,list(SID,TR,Ts,Da,Kh=round(100*Kmax/PGA,digits = 0))]
   DT <- reshape(DT,idvar =c("SID","Da","Ts"), timevar ="TR", direction = "wide")
   setnames(DT,old = c("SID"),new=c("NEHRP"))
   COL <- colnames(DT)

@@ -44,12 +44,12 @@ importModel.oqAEP <- function(path,gmdp.ini) {
     DT[1, X := "SN"]
     DT[2:.N, X := paste0("V", .I + 1)]
     if (all(DT[1, .(V1, V2, V3)] %in% c("lon", "lat", "depth"))) {
-      # ST <- DT[,.(V1,V2,V3,X)]
+      # ST <- DT[,list(V1,V2,V3,X)]
       DT <- DT[, -c("V1", "V2", "V3", "X")] |>
         t() |>
         data.table::as.data.table()
     } else if (all(DT[1, .(V1, V2)] %in% c("lon", "lat"))) {
-      # ST <- DT[,.(V1,V2,X)]
+      # ST <- DT[,list(V1,V2,X)]
       DT <- DT[, -c("V1", "V2", "X")] |>
         t() |>
         data.table::as.data.table()
