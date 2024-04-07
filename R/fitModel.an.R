@@ -10,7 +10,7 @@
 #' @export fitModel.an
 #'
 #' @import data.table
-#' @importFrom stats predict
+#' @import stats
 #' @importFrom randomForest randomForest
 #'
 #' @examples

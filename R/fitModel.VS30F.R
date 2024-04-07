@@ -15,7 +15,7 @@
 
 #'
 #' @import data.table
-#' @importFrom stats predict
+#' @import stats
 #' @import quantregForest
 #'
 #' @examples
@@ -49,12 +49,11 @@ fitModel.TsF <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFracti
   Y <- DATA$VS30F
   X <- DATA[,c("Hs","Gravels","Sands","Fines","POP","Water")]
   MODEL <- quantregForest::quantregForest(x=X,y=Y,nthread=8)
-  VALUE <- predict(MODEL,newdata=NEWDATA, what = level)
   MEAN <- predict(MODEL,newdata=NEWDATA, what = mean)
   MEDIAN <- predict(MODEL,newdata=NEWDATA, what = 0.5)
   SD <- predict(MODEL,newdata=NEWDATA, what = sd)
   UPPER <- predict(MODEL, newdata=NEWDATA,  what=max(level,abs(1-level)))
   LOWER <- predict(MODEL, newdata=NEWDATA,  what=min(level,abs(1-level)))
-  return(list(value=VALUE,mean=MEAN,median=MEDIAN,upper=UPPER,lower=LOWER,sd=SD,level=level))
+  return(list(mean=MEAN,median=MEDIAN,upper=UPPER,lower=LOWER,sd=SD,level=level))
 
 }

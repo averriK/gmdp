@@ -29,6 +29,8 @@ fitModel.TdF(
 \item{SandsFraction}{Integer. Sands fraction (0-100) in \%}
 
 \item{FinesFraction}{Integer. Fines fraction (0-100) in \%}
+
+\item{level}{Double. Confidence level (0-1)}
 }
 \value{
 List

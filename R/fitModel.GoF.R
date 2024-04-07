@@ -14,7 +14,7 @@
 #'
 #' @import data.table
 #' @import quantregForest
-#' @importFrom stats predict
+#' @import stats
 #'
 #' @examples
 #'
