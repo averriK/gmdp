@@ -137,16 +137,13 @@ buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000
   AUX <- SaTRmodel[, .(IT = IT, POE = IT * 1 / TRo, TR = TRo, Sa = exp(a + b * log(TRo) + c * 1 / TRo), AEP = 1 / TRo), by = .(Tn, p)]
 
   AEPTable <- data.table::rbindlist(list(AEPTable, AUX), use.names = TRUE)
+
   # ********************************************************************* ----
   # Get PGA
   Tn_PGA <- AEPTable$Tn |> min()
   PGATable <- AEPTable[Tn == Tn_PGA, .(PGA = Sa), by = .(p, TR)] |> unique()
-
   COLS <- colnames(AEPTable)[colnames(AEPTable) %in% colnames(PGATable)]
   AEPTable <- PGATable[AEPTable, on = COLS]
-
-
-
 
   # ********************************************************************* ----
   # Set AF=1
@@ -154,23 +151,13 @@ buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000
 
   AFTRmodel <- AEPTable[, fitModel.AFTR( x = .SD, Vs30 = gmdp.ini$vs30, Vref = gmdp.ini$vs30, Vl = 200, Vu = 2000), by = .(Tn, p, TR), .SDcols = colnames(AEPTable)] # c("PGA","Tn")]
 
-
-
   # ********************************************************************* ----
   # Get AF*Sa for AEP ordinates
   if(gmdp.ini$vs30 %in% c(760,3000)){
-
     message(sprintf("> Fit Site Response model (Stewart2017) for ASCE site classes..."))
     S1 <- seq(SIDtoVs30("E"), SIDtoVs30("BC"), by = Vs30_STEP)
     S2 <- sapply(c("BC", "C", "CD", "D", "DE", "E"), SIDtoVs30) |> unname()
     Vs30_SET <- union(S1,S2) |> unique() #S1[!(S1 %in% S2)]
-
-    # for (SID in c("A", "B", "BC", "C", "CD", "D", "DE", "E")) {
-    #   message(sprintf("> Building AEP Site Response model for site class %s...", SID))
-    #   AUX <- AEPTable[, fitModel.AFTR( x = .SD, Vs30 = SIDtoVs30(SID), Vref = gmdp.ini$vs30, Vl = 200, Vu = 2000), by = .(Tn, p, TR), .SDcols = colnames(AEPTable)]
-    #   AFTRmodel <- data.table::rbindlist(list(AFTRmodel, AUX), use.names = TRUE)
-    # }
-
     for (Vs in Vs30_SET) {
       message(sprintf("> Building AEP Site Response model for Vs30 %4.1f m/s...", Vs))
       AUX <- AEPTable[, fitModel.AFTR(x = .SD, Vs30 = Vs, Vref = gmdp.ini$vs30, Vl = 200, Vu = 2000), by = .(Tn, p, TR), .SDcols = colnames(AEPTable)]
@@ -185,14 +172,19 @@ buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000
 
   COLS <- colnames(AFTRmodel)[colnames(AFTRmodel) %in% colnames(AEPTable)]
   AEPTable <- AEPTable[AFTRmodel[, .(p, Tn, TR, AF, sdLnAF, Vs30, Vref, SID, SM)], on = COLS]
-  AEPTable[, AUX := Sa * AF]
-  AEPTable[, Sa := AUX]
-  AEPTable[, AUX := NULL]
+  AEPTable[, AUX1 := Sa * AF]
+  AEPTable[, AUX2 := PGA * AF]
+  AEPTable[, Sa := AUX1]
+  AEPTable[, PGA := AUX2]
+  AEPTable[, AUX1 := NULL]
+  AEPTable[, AUX2 := NULL]
   AEPTable[, Sa_Unit := "g"]
   AEPTable[, PGA_Unit := "g"]
   AEPTable[, Vs30_Unit := "m/s"]
   AEPTable[, Tn_Unit := "s"]
   AEPTable[, SN := ID]
+
+
 
   # ********************************************************************* ----
   # Get AF*Sa for UHS ordinates ----
