@@ -1,6 +1,5 @@
 # rm(list=ls())
-library(gmdp)
-library(stringr)
+devtools::load_all()
 
 # OutputFolder <- file.path("~/Database/gmdp/output/disagg/BC") |> normalizePath()
 OutputFolder <- file.path("~/Database/gmdp/output/classical/BC") |> normalizePath()

@@ -7,7 +7,7 @@
 #' @param po quantiles
 #' @param engine c("flextable")
 #' @param TRo return periods in years
-#' @param SIDo Site ID
+#' @param tagUnits boolean
 #'
 #' @return Table
 #' @export buildTable.Kh
@@ -18,26 +18,18 @@
 #'
 
 
-buildTable.Kh <- function(x,Tso,Dao,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),SIDo=NULL){
+buildTable.Kh <- function(x,Tso,Dao,size=12,po=NULL,engine="flextable",TRo=c(500,1000,2500,5000,10000),tagUnits=FALSE){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
-  . <- NULL
+
   DT <- copy(x$KmaxTable)
 
   DT <- DT[,list(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
 
-  if(!is.null(SIDo) ){
-    message(sprintf("Building Table for SID %s",SIDo))
-    DT <-DT[ SID %in% SIDo,-c("SIDo","Vref")]
-  }
-
-
-
-
 
   if(is.null(po)){
-    DT <- DT[p == "mean",-c("p")]
+    DT <- DT[p == "mean"]
   }
   if(!is.null(po)){
     DT <- DT[p %in% po]
@@ -49,13 +41,16 @@ buildTable.Kh <- function(x,Tso,Dao,size=12,po=c(0.16,0.50,0.84),engine="flextab
   if(nrow(DT)>0){
     # Predict Ranges
     DT <- DT[,.predict.Kh(x=.SD,Tso=Tso,Dao=Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
-    data.table::setnames(DT,old=c("TR"),new=c("TR[yr]"))
-    data.table::setnames(DT,old=c("Vs30"),new=c("Vs30[m/s]"))
-    data.table::setnames(DT,old=c("Kmax"),new=c("Kmax[g]"))
-    data.table::setnames(DT,old=c("PGA"),new=c("PGA[g]"))
-    data.table::setnames(DT,old=c("Kh"),new=c("Kh[%]"))
-    data.table::setnames(DT,old=c("Da"),new=c("Da[cm]"))
-    data.table::setnames(DT,old=c("Ts"),new=c("Ts[s]"))
+    if(tagUnits==TRUE){
+      data.table::setnames(DT,old=c("TR"),new=c("TR[yr]"))
+      data.table::setnames(DT,old=c("Vs30"),new=c("Vs30[m/s]"))
+      data.table::setnames(DT,old=c("Kmax"),new=c("Kmax[g]"))
+      data.table::setnames(DT,old=c("PGA"),new=c("PGA[g]"))
+      data.table::setnames(DT,old=c("Kh"),new=c("Kh[%]"))
+      data.table::setnames(DT,old=c("Da"),new=c("Da[cm]"))
+      data.table::setnames(DT,old=c("Ts"),new=c("Ts[s]"))
+    }
+
   } else {
     message(sprintf("Table with %d rows",nrow(DT)))
   }
@@ -64,6 +59,7 @@ buildTable.Kh <- function(x,Tso,Dao,size=12,po=c(0.16,0.50,0.84),engine="flextab
 
 
 .predict.Kh <- function(x,Tso,Dao){
+
   DATA <- x
   PGA <- x$PGA |> unique()
   stopifnot(length(PGA)==1)
