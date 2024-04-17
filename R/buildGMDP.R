@@ -141,11 +141,10 @@ buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000
   # ********************************************************************* ----
   # Get PGA at Vref
   Tn0 <- AEPTable$Tn |> min()
+  PGATable <- AEPTable[Tn == Tn0, .(PGAref = Sa,SN=.I), by = .(p,AEP,POE)] |> unique()
 
-
-.getPGA(.x=AEPTable,Tn0==Tn0)
-  PGATable <- AEPTable[Tn == Tn0, .(PGA = Sa), by = .(p, TR)] |> unique()
   COLS <- colnames(AEPTable)[colnames(AEPTable) %in% colnames(PGATable)]
+  browser()
   AEPTable <- PGATable[AEPTable, on = COLS]
 
   # ********************************************************************* ----
