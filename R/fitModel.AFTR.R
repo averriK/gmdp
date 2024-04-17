@@ -18,19 +18,22 @@
 #' @examples
 #'
 
-fitModel.AFTR <- function(x, Vs30 = NULL, Vref = NULL, Vl = 200, Vu = 2000) {
+fitModel.AFTR <- function(.x, Vs30 = NULL, Vref = NULL, Vl = 200, Vu = 2000) {
 
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
-  PGA <- x$PGA |> unique()
-  Tn <- x$Tn |> unique()
+
+
+  # PGA <- x$PGA |> unique()
+  # Tn <- x$Tn |> unique()
   OK <- !is.null(Vs30) & !is.null(Vref)
   OK <- OK & length(Vref) == 1 & length(Vs30) == 1
   # OK <- OK & (Vref %in% c(3000, 760))
   stopifnot(OK)
   if (Vs30 == Vref) {
     DT <- data.table::data.table(
+      .x,
       Vref = Vref,
       Vs30 = Vs30,
       SID = Vs30toSID(Vs30),
@@ -141,7 +144,7 @@ fitModel.AFTR <- function(x, Vs30 = NULL, Vref = NULL, Vl = 200, Vu = 2000) {
   # Mean Value ----
 
 
-  muLnPGA <- log(x$PGA)
+  muLnPGA <- log(.x$PGAref)
   if (Vref == 760) {
     C7603000 <- 2.275
   }
@@ -219,6 +222,7 @@ fitModel.AFTR <- function(x, Vs30 = NULL, Vref = NULL, Vl = 200, Vu = 2000) {
   sdLnAF <- sqrt(sdL^2 + sdI^2 + sdNL^2)
 
   DT <- data.table::data.table(
+    .x,
     Vref = Vref,
     Vs30 = Vs30,
     SID = Vs30toSID(Vs30),

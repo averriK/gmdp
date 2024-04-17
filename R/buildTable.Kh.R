@@ -40,7 +40,7 @@ buildTable.Kh <- function(x,Tso,Dao,size=12,po=NULL,engine="flextable",TRo=c(500
   # Check final rows
   if(nrow(DT)>0){
     # Predict Ranges
-   browser()
+
     DT <- DT[,.predict.Kh(x=.SD,Tso=Tso,Dao=Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
     if(tagUnits==TRUE){
       data.table::setnames(DT,old=c("TR"),new=c("TR[yr]"))
@@ -63,7 +63,11 @@ buildTable.Kh <- function(x,Tso,Dao,size=12,po=NULL,engine="flextable",TRo=c(500
 
   DATA <- x
   PGA <- x$PGA |> unique()
-  stopifnot(length(PGA)==1)
+  # stopifnot(length(PGA)==1)
+  if(length(PGA)>1){
+    browser()
+    stop("PGA must be unique")
+  }
 
   # Check ranges Ts
   if(!(Tso<=max(DATA$Ts) & Tso>=min(DATA$Ts))){
