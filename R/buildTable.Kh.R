@@ -40,6 +40,7 @@ buildTable.Kh <- function(x,Tso,Dao,size=12,po=NULL,engine="flextable",TRo=c(500
   # Check final rows
   if(nrow(DT)>0){
     # Predict Ranges
+   browser()
     DT <- DT[,.predict.Kh(x=.SD,Tso=Tso,Dao=Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
     if(tagUnits==TRUE){
       data.table::setnames(DT,old=c("TR"),new=c("TR[yr]"))
