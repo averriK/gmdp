@@ -23,9 +23,6 @@ fitModel.SaTR <- function(x, TRmin = 100, TRmax = 10000) {
   }, add = TRUE)
   . <- NULL
 
-
-
-
   if(any(is.na(x))){
     stop("The input data.table has NA values.")
   }

@@ -9,10 +9,10 @@ buildTable.Kh(
   Tso,
   Dao,
   size = 12,
-  po = c(0.16, 0.5, 0.84),
+  po = NULL,
   engine = "flextable",
   TRo = c(500, 1000, 2500, 5000, 10000),
-  SIDo = NULL
+  tagUnits = FALSE
 )
 }
 \arguments{
@@ -30,7 +30,7 @@ buildTable.Kh(
 
 \item{TRo}{return periods in years}
 
-\item{SIDo}{Site ID}
+\item{tagUnits}{boolean}
 }
 \value{
 Table
