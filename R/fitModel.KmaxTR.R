@@ -1,8 +1,12 @@
 
 #' Title
 #'
-#' @param x data.table
-#' @param n Number of points
+#' @param n numeric. Number of points
+#' @param a numeric. a parameter
+#' @param b numeric. b parameter
+#' @param e numeric. e parameter
+#' @param PGA numeric. PGA value
+#' @param Ts numeric. Ts value
 #'
 #' @return data.table
 #' @export fitModel.KmaxTR
@@ -20,9 +24,7 @@ fitModel.KmaxTR <- function(a,b,e,PGA,Ts, n = 20) { # cm
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
-  OK <- nrow(x) == 1
-  # EQ <- exp((-a+sqrt(a^2-0.98*(b+LnDa-e)))/0.49)
-  stopifnot(OK)
+
   a0 <- a#x$a
   b0 <- b#x$b
   e0 <- e#x$e

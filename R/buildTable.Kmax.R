@@ -48,14 +48,24 @@ buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",engine="flextable
 
   # ********************************************************************* ----
   # Pseudo-static coefficient ----
-  browser()
+
   message(sprintf("> Building pseudo-static coefficient model"))
   AUX <- UHSTable[, .(ID,Tn, TR, p, Ts, Vs30, Vref, a, b, e, PGA,PGAref)] |> unique()
-  KmaxTable <- AUX[, fitModel.KmaxTR( a=a,b=b,e=e,PGA=PGA,Ts=Ts, n = 100), by = .(ID,Tn, TR, p, Ts,Vs30,Vref), .SDcols = colnames(AUX)]
+  DT <- AUX[, fitModel.KmaxTR( a=a,b=b,e=e,PGA=PGA,Ts=Ts, n = 100), by = .(ID,Tn, TR, p, Ts,Vs30,Vref)]
 
   # KmaxTable <- KmaxTable[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
+  # Check ranges Ts
+  if(!(Tso<=max(DT$Ts) & Tso>=min(DT$Ts))){
+    warning(sprintf("Ts = %f s is out of range",Tso))
+    return(NULL)
+  }
 
-  KmaxTable <- KmaxTable[,.predict.Kh(x=.SD,Tso=Tso,Dao=Dao),by=.(TR,p,Vs30),.SDcols=colnames(KmaxTable)]
+  # Check ranges Da
+  if(!(Dao<=max(DT$Dmax) & Dao>=min(DT$Dmin))){
+    warning(sprintf("Da = %f cm is out of model range",Dao))
+    return(NULL)
+  }
+  KmaxTable <- DT[,.predict.Kmax(.SD,Tso,Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
   if(tagUnits==TRUE){
     data.table::setnames(
       KmaxTable,old=c("TR","Vs30","Kmax","PGA","Kh","Da","Ts"),new=c("TR[yr]","Vs30[m/s]","Kmax[g]","PGA[g]","Kh[%]","Da[cm]","Ts[s]"))
@@ -65,33 +75,21 @@ buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",engine="flextable
 }
 
 
-.predict.Kh <- function(x,Tso,Dao){
+.predict.Kmax <- function(.SD,Tso,Dao){
 
-  DATA <- x
-  PGA <- x$PGA |> unique()
-  # stopifnot(length(PGA)==1)
-  if(length(PGA)>1){
-    browser()
-    stop("PGA must be unique")
-  }
+  .newdata <- data.table(Ts=Tso,Da=Dao)
+  #
+  .data <- .SD[,.(Kh,Ts,Da)]
+  .model <- randomForest::randomForest(Kh~.,data=.data,importance=FALSE,proximity=FALSE)
+  Kh <- predict(.model,newdata=.newdata) |> round(digits=2)
 
-  # Check ranges Ts
-  if(!(Tso<=max(DATA$Ts) & Tso>=min(DATA$Ts))){
-    warning(sprintf("Ts = %f s is out of range",Tso))
-    return(NULL)
-  }
-
-  # Check ranges Da
-  if(!(Dao<=DATA$Dmax[1] & Dao>=DATA$Dmin[1])){
-    warning(sprintf("Da = %f cm is out of model range",Dao))
-    return(NULL)
-  }
-
-
-  y.rf <- randomForest::randomForest(Kh~Ts+Da,data=DATA,importance=FALSE,proximity=FALSE)
-  yp <- stats::predict(y.rf,newdata=data.table(Ts=Tso,Da=Dao))
-  # DT <- data.table::rbindlist(list(x,data.table::data.table(Ts=Tso,Da=Dao,Kmax=yp)),use.names = TRUE)
-  return(data.table::data.table(Ts=Tso,Da=Dao,Kh=round(yp,digits=1),PGA=round(PGA,digits = 3),Kmax=round(yp*PGA/100,digits=3)))
+  #
+  .data <- .SD[,.(Kmax,Ts,Da)]
+  .model <- randomForest::randomForest(Kmax~.,data=.data,importance=FALSE,proximity=FALSE)
+  Kmax <- predict(.model,newdata=.newdata) |> round(digits=3)
+  PGAo <- (100*Kmax/Kh )|>  round(digits=3)
+  DT <- data.table::data.table(Ts=Tso,Da=Dao,Kh=Kh,Kmax=Kmax,PGAo=PGAo)
+  return(DT)
 }
 
 
