@@ -137,17 +137,19 @@ buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000
   AUX <- SaTRmodel[, .(IT = IT, POE = IT * 1 / TRo, TR = TRo, Sa = exp(a + b * log(TRo) + c * 1 / TRo), AEP = 1 / TRo), by = .(Tn, p)]
 
   AEPTable <- data.table::rbindlist(list(AEPTable, AUX), use.names = TRUE)
+
+  # ********************************************************************* ----
+  # Build UHSTable
   TRo <- seq(100,10000,by=25)
-  TRTable <- SaTRmodel[, .(IT = IT, POE = IT * 1 / TRo, TR = TRo, Sa = exp(a + b * log(TRo) + c * 1 / TRo), AEP = 1 / TRo), by = .(Tn, p)]
+  UHSTable <- SaTRmodel[, .(IT = IT, POE = IT * 1 / TRo, TR = TRo, Sa = exp(a + b * log(TRo) + c * 1 / TRo), AEP = 1 / TRo), by = .(Tn, p)]
 # no NAs
   # ********************************************************************* ----
   # Get PGA at Vref
-  Tn0 <- TRTable$Tn |> min()
+  Tn0 <- UHSTable$Tn |> min()
   # browser()
-  PGATable <- TRTable[Tn == Tn0, .(PGAref = Sa), by = .(p, TR)] |> unique()
-  COLS <- colnames(TRTable)[colnames(TRTable) %in% colnames(PGATable)]
-  TRTable <- PGATable[TRTable, on = COLS]
-  browser()
+  PGATable <- UHSTable[Tn == Tn0, .(PGAref = Sa), by = .(p, TR)] |> unique()
+  COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(PGATable)]
+  UHSTable <- PGATable[UHSTable, on = COLS]
 
   # ********************************************************************* ----
   # Get AF*Sa for AEP ordinates
@@ -160,52 +162,22 @@ buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000
     Vs30_SET <- c(S1,S2,Vref) |> unique() |> sort()
     for (Vs in Vs30_SET) {
       message(sprintf("> Building AEP Site Response model for Vs30 %4.1f m/s...", Vs))
-      AUX <- TRTable[, fitModel.AFTR(.x=.SD, Vs30 = Vs, Vref = Vref), by = .(p,Tn),.SDcols=colnames(TRTable)]
+      AUX <- UHSTable[, fitModel.AFTR(.x=.SD,p=p,Tn=Tn, Vs30 = Vs, Vref = Vref), by = .(p,Tn)]
       AFTRmodel <- data.table::rbindlist(list(AFTRmodel, AUX), use.names = TRUE)
     }
   }
 
   # ********************************************************************* ----
-  # update TRTable
-  message(sprintf("> Update TRTable ..."))
-  COLS <- colnames(AFTRmodel)[colnames(AFTRmodel) %in% colnames(TRTable)]
-  TRTable <- AFTRmodel[TRTable, on = COLS]
+  # update UHSTable
+  message(sprintf("> Update UHSTable ..."))
+  COLS <- colnames(AFTRmodel)[colnames(AFTRmodel) %in% colnames(UHSTable)]
+  UHSTable <- AFTRmodel[UHSTable, on = COLS]
 
   # ********************************************************************* ----
   # Update AEPTable
 
   browser()
-
-  AEPTable[, Sa_AF := Sa * AF]
-  AEPTable[, Sa := Sa_AF]
-  AEPTable[, Sa_AF := NULL]
-  AEPTable[, Sa_Unit := "g"]
-  AEPTable[, PGA_Unit := "g"]
-  AEPTable[, Vs30_Unit := "m/s"]
-  AEPTable[, Tn_Unit := "s"]
-  AEPTable[, SN := ID]
-
-  browser()
-  PGATable <- AEPTable[Tn == Tn_PGA, .(PGA = Sa), by = .(p, TR,Vs30)] |> unique()
-
-  # ********************************************************************* ----
-  # Get AF*Sa for UHS ordinates ----
-  UHSTable <- AEPTable[TR %in% TRo] |> unique(by = c("Tn", "p", "TR", "SID", "Vs30", "SM"))
-  if(gmdp.ini$vs30 %in% c(760,3000)){
-    message(sprintf("> Refine Site Response model for UHS ..."))
-    S1 <- seq(SIDtoVs30("E"), SIDtoVs30("BC"), by = Vs30_STEP)
-    S2 <- sapply(c("BC", "C", "CD", "D", "DE", "E"), SIDtoVs30) |> unname()
-
-    Vs30_SET <- union(S1,S2) |> unique()# S1[!(S1 %in% S2)]
-    for (Vs in Vs30_SET) {
-      message(sprintf("> Building UHS Site Response model for Vs30 %4.1f m/s...", Vs))
-      AUX <- UHSTable[, fitModel.AFTR(x = .SD, Vs30 = Vs, Vref = gmdp.ini$vs30, Vl = 200, Vu = 2000), by = .(Tn, p, TR), .SDcols = colnames(UHSTable)]
-      AFTRmodel <- data.table::rbindlist(list(AFTRmodel, AUX), use.names = TRUE)
-    }
-  }
-
-
-
+  UHSTable[,`:=`(Sa=Sa*AF,PGA=PGAref*AF,SN=ID,PGA_Unit="g",Sa_Unit="g",Vs30_Unit="m/s",Tn_Unit="s")]
 
   AFTRmodel <- unique(AFTRmodel, by = c("Tn", "p", "TR", "Vs30", "Vref", "SID", "SM"))
   # ********************************************************************* ----
@@ -236,8 +208,7 @@ buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000
   message(sprintf("> Building pseudo-static coefficient model"))
   AUX <- UHSTable[, .(Tn, TR, p, Ts, Vs30, Vref, a, b, e, PGA)] |> unique()
   KmaxTable <- AUX[, fitModel.KmaxTR( x = .SD, n = 20), by = .(Tn, TR, p, Vs30, Vref), .SDcols = colnames(AUX)]
-
+rm(AUX)
   # ********************************************************************* ----
-  DT <- list(AEPTable = AEPTable, UHSTable = UHSTable, AFTRmodel = AFTRmodel, SaTRmodel = SaTRmodel, DnTRmodel = DnTRmodel, RMwTable = RMwTable, PGATable = PGATable, KmaxTable = KmaxTable, job.ini = gmdp.ini)
-  return(DT)
+  return(list(AEPTable = AEPTable, UHSTable = UHSTable, AFTRmodel = AFTRmodel, SaTRmodel = SaTRmodel, DnTRmodel = DnTRmodel, RMwTable = RMwTable, PGATable = PGATable, KmaxTable = KmaxTable, job.ini = gmdp.ini))
 }

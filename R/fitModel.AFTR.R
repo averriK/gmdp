@@ -18,14 +18,13 @@
 #' @examples
 #'
 
-fitModel.AFTR <- function(.x, Vs30 = NULL, Vref = NULL, Vl = 200, Vu = 2000) {
+fitModel.AFTR <- function(.x,p,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
 
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
 
-   OK <- !is.null(Vs30) & !is.null(Vref)
-  OK <- OK & length(Vref) == 1 & length(Vs30) == 1
+  OK <- length(Vref) == 1 & length(Vs30) == 1
   # OK <- OK & (Vref %in% c(3000, 760))
   stopifnot(OK)
   if (Vs30 == Vref) {
@@ -49,7 +48,6 @@ fitModel.AFTR <- function(.x, Vs30 = NULL, Vref = NULL, Vl = 200, Vu = 2000) {
     return(DT)
   }
   PGAref <- .x$PGAref[1]
-  Tn <- .x$Tn[1]
 
   # Interpolated tables ----
   cI <- stats::approxfun(
