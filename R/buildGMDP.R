@@ -2,7 +2,7 @@
 #' Title
 #'
 #' @param path Path to GMDP
-#' @param ID Output ID
+#' @param IDo Output IDo
 #' @param Vs30_STEP Vs30 Step
 #' @param Vref Vs30 in m/s
 #' @param ITo Invesigation Time. ITo=50 yr
@@ -14,7 +14,7 @@
 #'
 #' @examples
 #'
-buildGMDP <- function(path, ID="00000000", ITo,Vref=760,engine="openquake",Vs30_STEP = 25) {
+buildGMDP <- function(path, IDo="00000000", ITo,Vref=760,engine="openquake",Vs30_STEP = 25) {
   on.exit(expr = {rm(list = ls())}, add = TRUE)
 
   . <- NULL
@@ -71,7 +71,7 @@ buildGMDP <- function(path, ID="00000000", ITo,Vref=760,engine="openquake",Vs30_
     RMwTable[, SID := Vs30toSID(Vref)]
     RMwTable[, Vs30 := Vref]
     RMwTable[, SM := engine]
-    RMwTable[, SN := ID]
+    RMwTable[, ID := IDo]
     RMwTable[, IT := ITo]
   } else {
     message(sprintf("> Disaggregation data not available."))
@@ -133,7 +133,7 @@ buildGMDP <- function(path, ID="00000000", ITo,Vref=760,engine="openquake",Vs30_
 
   # ********************************************************************* ----
   # Update AEPTable
-  UHSTable[,`:=`(Sa=Sa*AF,PGA=PGAref*AF,SN=ID,PGA_Unit="g",Sa_Unit="g",TR_Unit="yr",Vs30_Unit="m/s",Vref_Unit="m/s")]
+  UHSTable[,`:=`(Sa=Sa*AF,PGA=PGAref*AF,ID=IDo,PGA_Unit="g",Sa_Unit="g",TR_Unit="yr",Vs30_Unit="m/s",Vref_Unit="m/s")]
 
   AFTRmodel <- unique(AFTRmodel, by = c("Tn", "p", "TR", "Vs30", "Vref", "SID", "SM"))
   # ********************************************************************* ----
