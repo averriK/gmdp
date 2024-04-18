@@ -17,45 +17,62 @@
 #'
 #'
 
+### Remover KmaxTable y DnTRTable y recalcularlas aqui para un set reducido de periodos
 
-buildTable.Kh <- function(x,Tso,Dao,size=12,po=NULL,engine="flextable",TRo=c(500,1000,2500,5000,10000),tagUnits=FALSE){
+buildTable.Kh <- function(.x,Tso,Dao,Vs30o=760,size=12,po="mean",engine="flextable",TRo=c(500,1000,2500,5000,10000),tagUnits=FALSE){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
 
-  DT <- copy(x$KmaxTable)
+  # ****
+  browser()
+  UHSTable <- .x$UHSTable[TR %in% TRo && p %in% po][order(TR)]
 
-  DT <- DT[,list(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
+
+  # ********************************************************************* ----
+  # Newmark Displacements ----
+  message(sprintf("> Building Newmark Displacements model"))
+  DnTRmodel <- UHSTable[ fitModel.DnTR(x = .SD, Mw = 6.5, xD = 1.3, kymin = 0.005, kymax = 0.5, n = 30), by = .(Tn, TR, Vs30, p), .SDcols = colnames(UHSTable)]
+
+  DnTRmodel[, SN := ID]
+  message(sprintf("> Update UHSTable ..."))
+  COLS <- colnames(DnTRmodel)[colnames(DnTRmodel) %in% colnames(UHSTable)]
+  UHSTable <- UHSTable[DnTRmodel[, .(SN, p, Tn, Ts, TR, Dn, sdLnD, ky, Vs30, a, b, e)], on = COLS]
+  UHSTable[, Dn_Unit := "cm"]
+  UHSTable[, Ts_Unit := "s"]
+
+  # ********************************************************************* ----
+  # Pseudo-static coefficient ----
+
+  message(sprintf("> Building pseudo-static coefficient model"))
+  AUX <- UHSTable[, .(Tn, TR, p, Ts, Vs30, Vref, a, b, e, PGA)] |> unique()
+  KmaxTable <- AUX[, fitModel.KmaxTR( x = .SD, n = 20), by = .(Tn, TR, p, Vs30, Vref), .SDcols = colnames(AUX)]
+  rm(AUX)
 
 
-  if(is.null(po)){
-    DT <- DT[p == "mean"]
+
+  # ****
+  # DT <- copy(x$KmaxTable)
+
+  KmaxTable <- KmaxTable[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
+
+
+  # if(is.null(po)){
+  #   DT <- DT[p == "mean"]
+  # }
+  # if(!is.null(po)){
+  #   DT <- DT[p %in% po]
+  # }
+
+  # DT <- DT[TR %in% TRo][order(TR)]
+
+  KmaxTable <- KmaxTable[,.predict.Kh(x=.SD,Tso=Tso,Dao=Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
+  if(tagUnits==TRUE){
+    data.table::setnames(
+      KmaxTable,old=c("TR","Vs30","Kmax","PGA","Kh","Da","Ts"),new=c("TR[yr]","Vs30[m/s]","Kmax[g]","PGA[g]","Kh[%]","Da[cm]","Ts[s]"))
   }
-  if(!is.null(po)){
-    DT <- DT[p %in% po]
-  }
 
-  DT <- DT[TR %in% TRo][order(TR)]
-
-  # Check final rows
-  if(nrow(DT)>0){
-    # Predict Ranges
-
-    DT <- DT[,.predict.Kh(x=.SD,Tso=Tso,Dao=Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
-    if(tagUnits==TRUE){
-      data.table::setnames(DT,old=c("TR"),new=c("TR[yr]"))
-      data.table::setnames(DT,old=c("Vs30"),new=c("Vs30[m/s]"))
-      data.table::setnames(DT,old=c("Kmax"),new=c("Kmax[g]"))
-      data.table::setnames(DT,old=c("PGA"),new=c("PGA[g]"))
-      data.table::setnames(DT,old=c("Kh"),new=c("Kh[%]"))
-      data.table::setnames(DT,old=c("Da"),new=c("Da[cm]"))
-      data.table::setnames(DT,old=c("Ts"),new=c("Ts[s]"))
-    }
-
-  } else {
-    message(sprintf("Table with %d rows",nrow(DT)))
-  }
-  return(DT)
+  return(KmaxTable)
 }
 
 

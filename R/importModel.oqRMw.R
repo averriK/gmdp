@@ -2,7 +2,7 @@
 #' Import disaggregation hazard (R-MW-p) from openquake
 #'
 #' @param path Path to the folder containing the hazard and quantile curves
-#' @param gmdp.ini List with the following elements:
+#' @param ITo Numeric. Investigation Time
 #'
 #' @return A data.table with the following columns:
 #' @export importModel.oqRMw
@@ -16,13 +16,13 @@
 #'
 #' @examples
 #'
-importModel.oqRMw <- function(path, gmdp.ini = NULL) {
+importModel.oqRMw <- function(path, ITo) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
   OK <- !is.null(path)
   stopifnot(OK)
-  IT <- gmdp.ini$IT # Investigation Time
+  IT <- ITo# gmdp.ini$IT # Investigation Time
 
   DHT <- data.table::data.table()
   PATH <- path
