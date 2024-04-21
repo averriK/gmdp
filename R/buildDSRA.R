@@ -148,9 +148,14 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
     Dr[k] <- (emax[k]-eo[k])/(emax[k]-emin[k])
     # Unit Weight kN/m3
     RANGE <- UnitWeightRanges[USCS == UID[k]]
+    browser()
+    # **********************************
+    # gsmin[k] <- runif(1,min=RANGE$gsminMin,max=RANGE$gsminMax) #[kN/m3]
+    # gsmax[k] <- runif(1,min=RANGE$gsmaxMin,max=RANGE$gsmaxMax) #[kN/m3]
+    gsmin[k] <- RANGE$gsMin #[kN/m3]
+    gsmax[k] <- RANGE$gsMax #[kN/m3]
+    # **********************************
 
-    gsmin[k] <- runif(1,min=RANGE$gsminMin,max=RANGE$gsminMax) #[kN/m3]
-    gsmax[k] <- runif(1,min=RANGE$gsmaxMin,max=RANGE$gsmaxMax) #[kN/m3]
     gs[k] <- gsmax[k] - (gsmax[k] - gsmin[k]) * (1 - Dr[k]) #[kN/m3]
 
     if(zm[k]>zw){
@@ -226,12 +231,15 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
   Ts <- fitModel.Ts(VSm=VSm,hs=hs,zm=zm) |> round(digits = 3)
   USCS.ID <- UID |> unique() |> sort() |> paste0(collapse = ".")
   # browser()
+  Coarse <-  round(sum(hs[UID %in% ValidCoarse])/sum(hs)*100,digits=0)
   Gravels <-  round(sum(hs[UID %in% ValidGravels])/sum(hs)*100,digits=0)
   Fines <-  round(sum(hs[UID %in% ValidFines])/sum(hs)*100,digits=0)
   Sands <-  round(sum(hs[UID %in% ValidSands])/sum(hs)*100,digits=0)
   Silts <-  round(sum(hs[UID %in% ValidSilts])/sum(hs)*100,digits=0)
   Clays <-  round(sum(hs[UID %in% ValidClays])/sum(hs)*100,digits=0)
   Organic <-  round(sum(hs[UID %in% ValidOrganic])/sum(hs)*100,digits=0)
+
+
   Water <- round(100*Hw/Hs)
   DATA <- data.table(X=log(zm/Hs),Z=log(VSm))
 
