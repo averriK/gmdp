@@ -226,9 +226,12 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
   Ts <- fitModel.Ts(VSm=VSm,hs=hs,zm=zm) |> round(digits = 3)
   USCS.ID <- UID |> unique() |> sort() |> paste0(collapse = ".")
   # browser()
-  Gravels <-  round(sum(hs[UID %in% ValidGravels])/sum(hs)*100)
-  Fines <-  round(sum(hs[UID %in% ValidFines])/sum(hs)*100)
-  Sands <-  round(sum(hs[UID %in% ValidSands])/sum(hs)*100)
+  Gravels <-  round(sum(hs[UID %in% ValidGravels])/sum(hs)*100,digits=0)
+  Fines <-  round(sum(hs[UID %in% ValidFines])/sum(hs)*100,digits=0)
+  Sands <-  round(sum(hs[UID %in% ValidSands])/sum(hs)*100,digits=0)
+  Silts <-  round(sum(hs[UID %in% ValidSilts])/sum(hs)*100,digits=0)
+  Clays <-  round(sum(hs[UID %in% ValidClays])/sum(hs)*100,digits=0)
+  Organic <-  round(sum(hs[UID %in% ValidOrganic])/sum(hs)*100,digits=0)
   Water <- round(100*Hw/Hs)
   DATA <- data.table(X=log(zm/Hs),Z=log(VSm))
 
@@ -242,7 +245,7 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
 
   # Output -----
 
-  SiteProperties <- data.table(Hs,Hw,NL,Z500,Z1000,SID,Go,mo,Ts,VSo,VS30,UID=USCS.ID,Gravels,Sands,Fines,Water,Go_Units="MPa",Vs_Units="m/s",SID,POP,POP_Units="kPa")
+  SiteProperties <- data.table(Hs,Hw,NL,Z500,Z1000,SID,Go,mo,Ts,VSo,VS30,UID=USCS.ID,Gravels,Sands,Fines,Clays,Silts,Organic,Water,Go_Units="MPa",Vs_Units="m/s",SID,POP,POP_Units="kPa")
 
 
   SiteLayers <- data.table(
