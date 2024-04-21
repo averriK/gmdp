@@ -13,7 +13,6 @@ Imports:
     data.table,
     epoxy,
     stringr,
-    ini,
     flextable,
     readxl,
     stats,

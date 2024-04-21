@@ -83,7 +83,7 @@ buildGMDP <- function(path, IDo="00000000", ITo,Vref=760,engine="openquake",Vs30
   # Build SaTR model
 
   message(sprintf("> Fit AEP  modelfrom %s...", path))
-  SaTRmodel <- AEPTable[, fitModel.SaTR( x = .SD, TRmin = 100, TRmax = 10000), by = c("Tn", "p")][, .(Tn, p, a, b, c, sdLnA)]
+  SaTRmodel <- AEPTable[, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("Tn", "p")][, .(Tn, p, a, b, c, sdLnA)]
 
 
   # ********************************************************************* ----
@@ -119,7 +119,7 @@ buildGMDP <- function(path, IDo="00000000", ITo,Vref=760,engine="openquake",Vs30
     Vs30_SET <- c(S1,S2,Vref) |> unique() |> sort()
     for (Vs in Vs30_SET) {
       message(sprintf("> Building AEP Site Response model for Vs30 %4.1f m/s...", Vs))
-      AUX <- UHSTable[, fitModel.AFTR(.x=.SD,p=p,Tn=Tn, Vs30 = Vs, Vref = Vref), by = .(p,Tn)]
+      AUX <- UHSTable[, fitModel.AF.TR(.x=.SD,p=p,Tn=Tn, Vs30 = Vs, Vref = Vref), by = .(p,Tn)]
       AFTRmodel <- data.table::rbindlist(list(AFTRmodel, AUX), use.names = TRUE)
     }
   }

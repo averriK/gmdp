@@ -7,7 +7,7 @@
 #' @param TRmax maximum TR value to fit
 #'
 #' @return data table with columns a, b, c, sdLnA, R2, MSE, RMSE, fit
-#' @export
+#' @export fitModel.Sa.TR
 #'
 
 #' @import data.table
@@ -17,7 +17,7 @@
 #'
 #' @examples
 #'
-fitModel.SaTR <- function(x, TRmin = 100, TRmax = 10000) {
+fitModel.Sa.TR <- function(x, TRmin = 100, TRmax = 10000) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)

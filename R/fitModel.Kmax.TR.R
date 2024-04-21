@@ -9,7 +9,7 @@
 #' @param Ts numeric. Ts value
 #'
 #' @return data.table
-#' @export fitModel.KmaxTR
+#' @export fitModel.Kmax.TR
 #'
 #' @import data.table
 #' @importFrom stats predict
@@ -19,7 +19,7 @@
 #'
 
 
-fitModel.KmaxTR <- function(a,b,e,PGA,Ts, n = 20) { # cm
+fitModel.Kmax.TR <- function(a,b,e,PGA,Ts, n = 20) { # cm
 
   on.exit(expr = {
     rm(list = ls())

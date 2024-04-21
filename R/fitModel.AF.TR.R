@@ -1,14 +1,16 @@
 
 #' Amplification Factor AF, from Stewart Et Al. 2016
 #'
-#' @param x GMDP object
-#' @param Vs30 Vs30 in m/s
-#' @param Vref Reference Vs30 in m/s
-#' @param Vl Lower limit Vs30 in m/s
-#' @param Vu Upper limit Vs30 in m/s
+#' @param .x GMDP object
+#' @param p Double. Period in seconds
+#' @param Tn Double. Natural Period
+#' @param Vs30 Double. Vs30 in m/s
+#' @param Vref Double. Reference Vs30 in m/s
+#' @param Vl Double. Lower limit Vs30 in m/s
+#' @param Vu Double. Upper limit Vs30 in m/s
 #'
 #' @return data.table
-#' @export fitModel.AFTR
+#' @export fitModel.AF.TR
 #'
 #' @import data.table
 #' @importFrom stats lm
@@ -18,7 +20,7 @@
 #' @examples
 #'
 
-fitModel.AFTR <- function(.x,p,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
+fitModel.AF.TR <- function(.x,p,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
 
   on.exit(expr = {
     rm(list = ls())

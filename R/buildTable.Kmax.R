@@ -1,8 +1,9 @@
 #' Build Seismic Coefficient Table (Kmax) in g
 #'
-#' @param x GMDP object
-#' @param Tso Ts in seconds
-#' @param Dao Da in cm
+#' @param .x UHSTable object
+#' @param Tso numeric Ts in seconds
+#' @param Dao numeric. Da in cm
+#' @param Vs30o number
 #' @param size font size
 #' @param po quantiles
 #' @param engine c("flextable")
@@ -10,17 +11,16 @@
 #' @param tagUnits boolean
 #'
 #' @return Table
-#' @export buildTable.Kh
+#' @export buildTable.Kmax
 #' @import data.table
+#' @importFrom stats predict
 #'
 #' @examples
 #'
 #'
 buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",engine="flextable",TRo=c(500,1000,2500,5000,10000),tagUnits=FALSE){
-  on.exit(expr = {
-    rm(list = ls())
-  }, add = TRUE)
-
+  on.exit(expr = {rm(list = ls())  }, add = TRUE)
+  . <- NULL
   # ****
   # browser()
 
@@ -37,7 +37,7 @@ buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",engine="flextable
   # Newmark Displacements ----
   message(sprintf("> Building Newmark Displacements model"))
 
-  DnTRmodel <-  UHSTable[,fitModel.DnTR(Sa=Sa,PGA=PGA,Tn=Tn,Mw = 6.5, xD = 1.3, kymin = 0.001, kymax = 0.55, n = 100), by = .(ID,Tn, TR,Vref,Vs30, p)] |> unique()
+  DnTRmodel <-  UHSTable[,fitModel.Dn.TR(Sa=Sa,PGA=PGA,Tn=Tn,Mw = 6.5, xD = 1.3, kymin = 0.001, kymax = 0.55, n = 100), by = .(ID,Tn, TR,Vref,Vs30, p)] |> unique()
 
   message(sprintf("> Update UHSTable ..."))
 
@@ -51,20 +51,22 @@ buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",engine="flextable
 
   message(sprintf("> Building pseudo-static coefficient model"))
   AUX <- UHSTable[, .(ID,Tn, TR, p, Ts, Vs30, Vref, a, b, e, PGA,PGAref)] |> unique()
-  DT <- AUX[, fitModel.KmaxTR( a=a,b=b,e=e,PGA=PGA,Ts=Ts, n = 100), by = .(ID,Tn, TR, p, Ts,Vs30,Vref)]
+  DT <- AUX[, fitModel.Kmax.TR( a=a,b=b,e=e,PGA=PGA,Ts=Ts, n = 100), by = .(ID,Tn, TR, p, Ts,Vs30,Vref)]
 
   # KmaxTable <- KmaxTable[,.(Ts,TR,p,Vs30,Vref,Da,Dmin,Dmax,PGA,Kh)] |> unique()
   # Check ranges Ts
-  if(!(Tso<=max(DT$Ts) & Tso>=min(DT$Ts))){
-    warning(sprintf("Ts = %f s is out of range",Tso))
+
+  if(!(min(Tso)<=max(DT$Ts) & max(Tso)>=min(DT$Ts))){
+    warning(sprintf("Ts = %f s is out of range",min(Tso)))
     return(NULL)
   }
 
   # Check ranges Da
-  if(!(Dao<=max(DT$Dmax) & Dao>=min(DT$Dmin))){
-    warning(sprintf("Da = %f cm is out of model range",Dao))
+  if(!(min(Dao)<=max(DT$Dmax) & max(Dao)>=min(DT$Dmin))){
+    warning(sprintf("Da = %f cm is out of model range",max(Dao)))
     return(NULL)
   }
+
   KmaxTable <- DT[,.predict.Kmax(.SD,Tso,Dao),by=.(TR,p,Vs30),.SDcols=colnames(DT)]
   if(tagUnits==TRUE){
     data.table::setnames(
@@ -76,7 +78,9 @@ buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",engine="flextable
 
 
 .predict.Kmax <- function(.SD,Tso,Dao){
+  on.exit(expr = {rm(list = ls())  }, add = TRUE)
 
+  . <- NULL
   .newdata <- data.table(Ts=Tso,Da=Dao)
   #
   .data <- .SD[,.(Kh,Ts,Da)]
