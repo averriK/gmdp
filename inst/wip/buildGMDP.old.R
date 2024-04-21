@@ -230,7 +230,7 @@ buildGMDP <- function(path, ID="00000000", TRo = c(100, 200, 475,500, 1000, 2000
   # Pseudo-static coefficient ----
   message(sprintf("> Building pseudo-static coefficient model"))
   AUX <- UHSTable[, .(Tn, TR, p, Ts, Vs30, Vref, a, b, e, PGA)] |> unique()
-  KmaxTable <- AUX[, fitModel.KmaxTR( x = .SD, n = 20), by = .(Tn, TR, p, Vs30, Vref), .SDcols = colnames(AUX)]
+  KmaxTable <- AUX[, fitModel.Kmax.TR( x = .SD, n = 20), by = .(Tn, TR, p, Vs30, Vref), .SDcols = colnames(AUX)]
 
   # ********************************************************************* ----
   DT <- list(AEPTable = AEPTable, UHSTable = UHSTable, AFTRmodel = AFTRmodel, SaTRmodel = SaTRmodel, DnTRmodel = DnTRmodel, RMwTable = RMwTable, PGATable = PGATable, KmaxTable = KmaxTable, job.ini = gmdp.ini)

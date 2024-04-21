@@ -6,28 +6,25 @@
 \usage{
 buildGMDP(
   path,
-  ID = "00000000",
-  TRo = c(100, 200, 475, 500, 1000, 2000, 2475, 2500, 5000, 10000),
-  ITo = 50,
-  Vs30o = 760,
-  Vs30_STEP = 25,
-  configFile = "gmdp.ini"
+  IDo = "00000000",
+  ITo,
+  Vref = 760,
+  engine = "openquake",
+  Vs30_STEP = 25
 )
 }
 \arguments{
 \item{path}{Path to GMDP}
 
-\item{ID}{Output ID}
-
-\item{TRo}{Return Periods}
+\item{IDo}{Output IDo}
 
 \item{ITo}{Invesigation Time. ITo=50 yr}
 
-\item{Vs30o}{Vs30 in m/s}
+\item{Vref}{Vs30 in m/s}
+
+\item{engine}{c("openquake","user")}
 
 \item{Vs30_STEP}{Vs30 Step}
-
-\item{configFile}{GMDP config file}
 }
 \value{
 list

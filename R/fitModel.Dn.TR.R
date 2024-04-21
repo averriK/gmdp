@@ -1,15 +1,17 @@
 
 #' Title
 #'
-#' @param x GMDP object
-#' @param xD BM19 Factor
-#' @param Mw Magnitude
-#' @param kymin Minimum ky value
-#' @param kymax Maximum ky value
-#' @param n Number of ky values
+#' @param Tn Double. Natural Period
+#' @param Sa Double. Spectral Acceleration
+#' @param PGA Double. Peak Ground Acceleration
+#' @param xD Double. BM19 Factor
+#' @param Mw Double. Magnitude
+#' @param kymin Double. Minimum ky value
+#' @param kymax Double. Maximum ky value
+#' @param n Integer. Number of ky values
 #'
 #' @return data.table
-#' @export fitModel.DnTR
+#' @export fitModel.Dn.TR
 #'
 
 #' @import data.table
@@ -18,21 +20,18 @@
 #'
 #' @examples
 #'
-fitModel.DnTR <- function(x, xD = 1.3, Mw = 6.5, kymin = 0.005, kymax = 0.5, n = 30) {
+fitModel.Dn.TR <- function(Tn,Sa,PGA,xD = 1.3, Mw = 6.5, kymin = 0.005, kymax = 0.5, n = 30) {
 
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
-  OK <- nrow(x) == 1
-  OK <- OK & !is.null(Mw)
-  # OK <- OK & length(Tn)==1
-  stopifnot(OK)
-  Tn <- x$Tn
-  Ts <- xD * x$Tn
+
+  # Tn <- x$Tn
+  Ts <- xD * Tn#x$Tn
   # po <- x$p
-  muSa <- x$Sa
-  muLnSa <- log(x$Sa)
-  PGA <- x$PGA
+  muSa <- Sa#x$Sa
+  muLnSa <- log(Sa)#log(x$Sa)
+  # PGA <- x$PGA
   PGV <- 55 * PGA # Idriss: pgv=55 * PGA[g] = [cm/s]
   ky <- seq(from = log(kymin), to = log(kymax), length.out = n) |>
     exp() |>

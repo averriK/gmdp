@@ -17,8 +17,9 @@
 #'
 #'
 
+### Remover KmaxTable y DnTRTable y recalcularlas aqui para un set reducido de periodos
 
-buildTable.Kh <- function(x,Tso,Dao,size=12,po=NULL,engine="flextable",TRo=c(500,1000,2500,5000,10000),tagUnits=FALSE){
+buildTable.Dn <- function(x,Tso,Dao,size=12,po=NULL,engine="flextable",TRo=c(500,1000,2500,5000,10000),tagUnits=FALSE){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)

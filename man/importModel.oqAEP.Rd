@@ -4,12 +4,12 @@
 \alias{importModel.oqAEP}
 \title{Import Annual Exceedance Probabiliies (AEP) from openquake zip files.}
 \usage{
-importModel.oqAEP(path, gmdp.ini)
+importModel.oqAEP(path, ITo)
 }
 \arguments{
-\item{path}{Path to the folder containing the hazard and quantile curves}
+\item{path}{character. Path to the folder containing the hazard and quantile curves}
 
-\item{gmdp.ini}{Config file.}
+\item{ITo}{numeric}
 }
 \value{
 A data.table with the following columns:

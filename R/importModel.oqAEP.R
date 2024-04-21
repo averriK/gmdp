@@ -1,18 +1,18 @@
 
 #' Import Annual Exceedance Probabiliies (AEP) from openquake zip files.
 #'
-#' @param path Path to the folder containing the hazard and quantile curves
-#' @param gmdp.ini Config file.
+#' @param path character. Path to the folder containing the hazard and quantile curves
+#' @param ITo numeric
 #'
 #' @return A data.table with the following columns:
-#' @export
+#' @export importModel.oqAEP
 #'
 #' @examples
 #' @import data.table
 #' @importFrom stringr str_remove
 #' @importFrom stringr str_split
 #'
-importModel.oqAEP <- function(path,gmdp.ini) {
+importModel.oqAEP <- function(path,ITo) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
@@ -33,7 +33,7 @@ importModel.oqAEP <- function(path,gmdp.ini) {
   }
 
   # Read job.ini (if exists)
-  IT <- gmdp.ini$IT
+  IT <- ITo# gmdp.ini$IT
 
   for (k in seq_len(NR)) {
     FILE <- DATAPATH$name[k]
