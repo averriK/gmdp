@@ -1,67 +1,63 @@
 devtools::load_all()
-
-source("inst/dsra_helpers.R")
-
-NITER <- 1:50
 DT <- data.table()
-Hmin <- 14
-Hmax <- 14
-Hs_SET=seq(from=Hmin,to=Hmax)
+NITER <- 50
+Hmin <- 10
+Hmax <- 25
+Hs=seq(from=Hmin,to=Hmax)
 PATH <- "data-raw/dsra"
-POPmin <- 50
-POPmax <- 1000
-# POP_SET=c(50,75,100,150,200,300,400,500,750,1000)
-POP_SET=c(600,700,800,900,1100,1200,1300,1400,1500)
+W=c(0,0.25,0.50,1.0) #%
+# POP=c(50,75,100,150,200,300,400,500,750,1000)
+POP=c(100,200,300,600,800,1000,1200,1500,2000,2500)
 
 
 # * RandomProfiles ----
-USCS_TARGET <- c(ValidSands,ValidFines,ValidGravels)
+USCS <- c(ValidSands,ValidFines,ValidGravels)
 FILE <- file.path(PATH,"RandomProfiles.csv")
-.runUSCS(FILE=FILE,USCS_TARGET=USCS_TARGET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+.runUSCS(FILE=FILE,USCS=USCS,Hs=Hs,POP=POP,NITER=NITER,W=W)
 
 
 # * UniformProfiles ----
 FILE <- file.path(PATH,"UniformProfiles.csv")
-Group_SET <- c("Gravels","Sands","Clays","Silts")
-.runGROUP(FILE= FILE,Group_SET=Group_SET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+Group <- c("Gravels","Sands","Clays","Silts")
+.runGROUP(FILE= FILE,Group=Group,Hs=Hs,POP=POP,NITER=NITER,W=W)
 # * MixedGravelsSands----
-USCS_TARGET <- c(ValidSands,ValidGravels)
+USCS <- c(ValidSands,ValidGravels)
 FILE <- file.path(PATH,"MixedGravelsSands.csv")
-.runUSCS(FILE=FILE,USCS_TARGET=USCS_TARGET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+.runUSCS(FILE=FILE,USCS=USCS,Hs=Hs,POP=POP,NITER=NITER,W=W)
 
 
 
 # * MixedGravelsClays ----
-USCS_TARGET <- c(ValidGravels,ValidClays)
+USCS <- c(ValidGravels,ValidClays)
 FILE <- file.path(PATH,"MixedGravelsClays.csv")
-.runUSCS(FILE=FILE,USCS_TARGET=USCS_TARGET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+.runUSCS(FILE=FILE,USCS=USCS,Hs=Hs,POP=POP,NITER=NITER,W=W)
 ##
 
 # * MixedGravelsSilts ----
-USCS_TARGET <- c(ValidGravels,ValidSilts)
+USCS <- c(ValidGravels,ValidSilts)
 FILE <- file.path(PATH,"MixedGravelsSilts.csv")
-.runUSCS(FILE=FILE,USCS_TARGET=USCS_TARGET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+.runUSCS(FILE=FILE,USCS=USCS,Hs=Hs,POP=POP,NITER=NITER,W=W)
 
 # * MixedFines ----
-USCS_TARGET <- c(ValidFines)
+USCS <- c(ValidFines)
 FILE <- file.path(PATH,"MixedFines.csv")
-.runUSCS(FILE=FILE,USCS_TARGET=USCS_TARGET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+.runUSCS(FILE=FILE,USCS=USCS,Hs=Hs,POP=POP,NITER=NITER,W=W)
 
 
 # * MixedGravelsFines ----
-USCS_TARGET <- c(ValidGravels,ValidFines)
+USCS <- c(ValidGravels,ValidFines)
 FILE <- file.path(PATH,"MixedGravelsFines.csv")
-.runUSCS(FILE=FILE,USCS_TARGET=USCS_TARGET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+.runUSCS(FILE=FILE,USCS=USCS,Hs=Hs,POP=POP,NITER=NITER,W=W)
 
 # * MixedSandsFines----
-USCS_TARGET <- c(ValidSands,ValidFines)
+USCS <- c(ValidSands,ValidFines)
 FILE <- file.path(PATH,"MixedSandsFines.csv")
-.runUSCS(FILE=FILE,USCS_TARGET=USCS_TARGET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+.runUSCS(FILE=FILE,USCS=USCS,Hs=Hs,POP=POP,NITER=NITER,W=W)
 
 # * MixedSandsSilts ----
-USCS_TARGET <- c(ValidSands,ValidSilts)
+USCS <- c(ValidSands,ValidSilts)
 FILE <- file.path(PATH,"MixedSandsSilts.csv")
-.runUSCS(FILE=FILE,USCS_TARGET=USCS_TARGET,Hs_SET=Hs_SET,POP_SET=POP_SET)
+.runUSCS(FILE=FILE,USCS=USCS,Hs=Hs,POP=POP,NITER=NITER,W=W)
 
 
 

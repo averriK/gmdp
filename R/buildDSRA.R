@@ -1,7 +1,7 @@
 #' Build DSRA Object
 #'
 #' @param Hs Scalar Layer Thickness  in m
-#' @param Hw Scalar. Water Table Depth in m.  zw = Hs-Hw
+#' @param W Scalar. Water Table Depth in % Hs.  zw = Hs-W*Hs
 #' @param USCS Vector. Unified Soil Classification System codes
 #' @param Group Soil Groups c=("Gravels","Fines","Sands")
 #' @param h Scalar. Layer Thickness in m
@@ -26,7 +26,7 @@
 #'
 #' @examples
 #'
-buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribution=TRUE,POP = 0,IgnoreModelIntervals=TRUE){
+buildDSRA <- function(Hs,W=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribution=TRUE,POP = 0,IgnoreModelIntervals=TRUE){
 
   on.exit(expr = {
     rm(list = ls())
@@ -70,7 +70,9 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
   stopifnot(!is.null(USCS) && all(USCS %in% ValidUSCS))
   UID <- sample(USCS,size=NL,replace = TRUE)
   GID <- OV
-  gs <- OV
+  gs <- OV # Sumerged,Saturated, depending on zw
+  gd <- OV # Dry
+  gsat <- OV #Sat
   eo <- OV
   emax <- OV
   emin <- OV
@@ -86,6 +88,8 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
   VSm <- OV
   OCR <- OV
   gw <- OV
+  # rho <- OV
+  Hw <- Hs*W
 
   zw <- Hs-Hw
 
@@ -148,21 +152,32 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
     Dr[k] <- (emax[k]-eo[k])/(emax[k]-emin[k])
     # Unit Weight kN/m3
     RANGE <- UnitWeightRanges[USCS == UID[k]]
-    browser()
+
     # **********************************
     # gsmin[k] <- runif(1,min=RANGE$gsminMin,max=RANGE$gsminMax) #[kN/m3]
     # gsmax[k] <- runif(1,min=RANGE$gsmaxMin,max=RANGE$gsmaxMax) #[kN/m3]
-    gsmin[k] <- RANGE$gsMin #[kN/m3]
-    gsmax[k] <- RANGE$gsMax #[kN/m3]
+    gsmin[k] <- RANGE$gsatMin #[kN/m3]
+    gsmax[k] <- RANGE$gsatMax #[kN/m3]
     # **********************************
+    # Saturated wunit weight
+    # gsat[k] <- gsmax[k] - (gsmax[k] - gsmin[k]) * (1 - Dr[k]) #[kN/m3]
+    gsat[k] <- runif(n=1,min=gsmin[k],max=gsmax[k])
 
-    gs[k] <- gsmax[k] - (gsmax[k] - gsmin[k]) * (1 - Dr[k]) #[kN/m3]
+    # Dry weight
+    gd[k] <- max(0,gsat[k]-10)
 
+
+
+    # Submerged weight
     if(zm[k]>zw){
-      #Saturated soils
       gw[k] <- 10
-      gs[k] <- max(0,gs[k]-gw[k]) #some organic clays has gs<10
+      gs[k] <- max(0,gsat[k]-gw[k]) #some organic clays has gs<10
+    } else {
+      gs[k] <- gsat[k]
     }
+    # Density
+    # rho[k] <- gs[k]*1000/9.81 # gs in KN/m3, rho in kg/m3
+
 
     # Plasticity Index
 
@@ -179,7 +194,7 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
       }
     }
 
-    # Otahedral pressures
+    # Octahedral pressures
     Ko <- 0.5
     if(k>1) {po[k] <- pi[k-1]}
 
@@ -208,7 +223,7 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
     Gref <- sapply(seq(1,length(Fe)),function(n){A[n]*Fe[n]*(OCR[k]^m1)*100^(N[n])}) #[MPa]
     Go <- sapply(seq(1,length(Fe)),function(n){Gref[n]*(pm[k]/100)^(N[n])}) #[MPa]
     Gm[k] <- mean(Go) # [MPa]
-    VSm[k] <- sqrt(9.81*Gm[k]*1000/gs[k])# sqrt(kPa / (9.81 m/s2 kN/m3)) [m/s]
+    VSm[k] <- sqrt(9.81*Gm[k]*1000/gsat[k])# sqrt(kPa / (9.81 m/s2 kN/m3)) [m/s]
 
 
   }
@@ -220,14 +235,22 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
   VS30 <- (30/sum(dtVs[zi<=30])) |> round(digits = 1)
   SID <- Vs30toSID(VS30)
   # Fit Go,mo model ----
-  DATA <- data.table(X=log(zm/Hs),Y=log(Gm),Z=log(VSm))
+
+  # if(any(zm/Hs<=0) || any(Gm<=0) ){browser()}
+  DATA <- (data.table(zm=zm,Gm=Gm))[Gm>0][,.(X=log(zm/Hs),Y=log(Gm))]
+
+
   LM <- lm(formula=Y~X,data=DATA)
   LnGo <- LM$coefficients[1] |> unname()
-  mo <- LM$coefficients[2] |> round(digits=2) |> unname()
+  mo <- LM$coefficients[2] |> round(digits=3) |> unname()
   Go <- exp(LnGo) |> round(digits=2) # [MPa]
-  LM <- lm(formula=Z~X+Y,data=DATA)
-  VSo <- predict.lm(LM,newdata = data.table(X=0,Y=log(Go))) |> exp() |> round(digits = 1)
-  # browser()
+
+
+# Gmax = rho* Vs^2
+  # LM <- lm(formula=Z~X+Y,data=DATA)
+  # VSo <- predict.lm(LM,newdata = data.table(X=0,Y=log(Go))) |> exp() |> round(digits = 1)
+  VSo <- sqrt(9.81*Go*1000/gsat[NL]) |> round(digits = 1)
+
   Ts <- fitModel.Ts(VSm=VSm,hs=hs,zm=zm) |> round(digits = 3)
   USCS.ID <- UID |> unique() |> sort() |> paste0(collapse = ".")
   # browser()
@@ -239,9 +262,13 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
   Clays <-  round(sum(hs[UID %in% ValidClays])/sum(hs)*100,digits=0)
   Organic <-  round(sum(hs[UID %in% ValidOrganic])/sum(hs)*100,digits=0)
 
+  MAP <- .mapLayers(UID=UID,hs=hs)
 
-  Water <- round(100*Hw/Hs)
-  DATA <- data.table(X=log(zm/Hs),Z=log(VSm))
+  Water <- round(100*W)
+
+  # if(any(zm/Hs<=0) || any(Gm<=0) ){browser()}
+  DATA <- (data.table(zm=zm,VSm=VSm))[VSm>0][,.(X=log(zm/Hs),Z=log(VSm))]
+  # DATA <- data.table(X=log(zm/Hs),Z=log(VSm))
 
   LM <- lm(formula=X~Z,data=DATA)
   Z500 <- predict(LM,newdata=data.table(Z=log(500))) |> exp() |> round(digits = 1)
@@ -253,7 +280,7 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
 
   # Output -----
 
-  SiteProperties <- data.table(Hs,Hw,NL,Z500,Z1000,SID,Go,mo,Ts,VSo,VS30,UID=USCS.ID,Gravels,Sands,Fines,Clays,Silts,Organic,Water,Go_Units="MPa",Vs_Units="m/s",SID,POP,POP_Units="kPa")
+  SiteProperties <- data.table(Hs,Hw,hw,NL,Z500,Z1000,SID,Go,mo,Ts,VSo,VS30,UID=USCS.ID,Gravels,Sands,Fines,Clays,Silts,Organic,Water,MAP,Go_Units="MPa",Vs_Units="m/s",SID,POP,POP_Units="kPa")
 
 
   SiteLayers <- data.table(
@@ -266,6 +293,7 @@ buildDSRA <- function(Hs,Hw=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribu
     emax=emax[1:NL] |> round(digits = 2),
     gsmin=gsmin[1:NL] |> round(digits = 1),
     gs=gs[1:NL]|> round(digits = 1),
+    gsat=gsat[1:NL]|> round(digits = 1),
     gsmax=gsmax[1:NL] |> round(digits = 1),
     gw=gw[1:NL],
     Dr=Dr[1:NL] |> round(digits = 2),
