@@ -7,7 +7,7 @@
 #' @param level Double. Confidence level (0-1)
 #'
 #' @return Number. Cylinder roots
-#' @export fitModel.an
+#' @export .fitModel.an
 #'
 #' @import data.table
 #' @import stats
@@ -15,7 +15,7 @@
 #'
 #' @examples
 #'
-fitModel.an <- function(no=1,mo,lo,OSF=0.30,level=0.95){
+.fitModel.an <- function(no=1,mo,lo,OSF=0.30,level=0.95){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   # OK <- exists("CylinderRootsModel") & !is.null(CylinderRootsModel)
   OK <- exists("CylinderRoots") & !is.null(CylinderRoots)

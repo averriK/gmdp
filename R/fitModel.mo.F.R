@@ -11,7 +11,7 @@
 #'
 #' @return Double. Maximum Shear Module (MPA)
 #'
-#' @export fitModel.mo.F
+#' @export .fitModel.mo.F
 #'
 #' @import data.table
 #' @import stats
@@ -19,7 +19,7 @@
 #'
 #' @examples
 #'
-fitModel.mo.F <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0,level=0.95){
+.fitModel.mo.F <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0,level=0.95){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   OK <- exists("SiteTable") & !is.null(SiteTable)
   stopifnot(OK)

@@ -10,7 +10,7 @@
 #' @param level Double. Confidence level (0-1)
 #'
 #' @return Double. Maximum Shear Module (MPA)
-#' @export fitModel.Go.F
+#' @export .fitModel.Go.F
 #'
 #' @import data.table
 #' @import quantregForest
@@ -18,7 +18,7 @@
 #'
 #' @examples
 #'
-fitModel.Go.F <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0,level=0.95){
+.fitModel.Go.F <- function(Hso,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,OSF=0.30,POPo=0,WaterFraction=0,level=0.95){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   . <- NULL
 

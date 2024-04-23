@@ -11,7 +11,7 @@
 #' @param s Double. Slope S=1/tan(beta)
 #'
 #' @return List
-#' @export fitModel.Td.F
+#' @export .fitModel.Td.F
 #'
 #' @import data.table
 #' @import quantregForest
@@ -19,7 +19,7 @@
 #'
 #' @examples
 #'
-fitModel.Td.F <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,s=NULL,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,level=0.95){
+.fitModel.Td.F <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,s=NULL,GravelsFraction=NULL,SandsFraction=NULL,FinesFraction=NULL,level=0.95){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   . <- NULL
   # browser()
@@ -77,10 +77,10 @@ fitModel.Td.F <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,s=NULL,GravelsFraction=
   # Mean Values - temporary solution.
   # replace this code with simulation for all values and quantile estimation
 
-  GoF <- fitModel.Go.F(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction,level=level)
+  GoF <- .fitModel.Go.F(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction,level=level)
   VSoF <- fitModel.VSo.F(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction,level=level)
-  moF <- fitModel.mo.F(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction,level=level)
-  an <- fitModel.an(mo=moF[["mean"]],lo=lo,level=level)
+  moF <- .fitModel.mo.F(Hso=Hmax,GravelsFraction=GravelsFraction,SandsFraction=SandsFraction,FinesFraction=FinesFraction,level=level)
+  an <- .fitModel.an(mo=moF[["mean"]],lo=lo,level=level)
 
   Ts <- (4*pi*Hmax/(an*(2 - moF[["mean"]])*VSoF[["mean"]]))
   return(list(Ts=round(Ts,3),Go=GoF,VSo=VSoF,mo=moF,an=an))
