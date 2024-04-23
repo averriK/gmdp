@@ -56,7 +56,7 @@
 }
 
 
-.mapLayers <- function(UID,hs,USCS=c("SP", "SM", "SC", "SW", "MH", "ML", "CH", "CL", "OH", "OL", "PT", "GW", "GP", "GM", "GC")){
+.mapLayers <- function(UID,hs,USCS=ValidUSCS){
   DT <- data.table(UID,hs)
   Hs=sum(hs)
 
@@ -66,3 +66,17 @@
   DT <- DT[, .SD, .SDcols = USCS]
   return(DT)
 }
+
+
+.checkUSCS <- function(.x,UID,exact_match=FALSE){
+  X <- str_split(UID,pattern = "[[.]]") |> unlist()
+ if(exact_match){
+   VALUE <- unname(all(X %in% .x)|> unname())
+ } else {
+   VALUE <- unname(all(.x %in% X)|> unname())
+ }
+  return(VALUE)
+}
+
+# > Z <- lapply(SiteTable$UID,function(U){.checkUSCS (.x=c("MH","CH","ML","CL"),U,exact_match=TRUE)})
+

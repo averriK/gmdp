@@ -280,7 +280,7 @@ buildDSRA <- function(Hs,W=0,USCS,Group=NULL,h = 0.50,DrID=NULL,UniformDistribut
 
   # Output -----
 
-  SiteProperties <- data.table(Hs,Hw,hw,NL,Z500,Z1000,SID,Go,mo,Ts,VSo,VS30,UID=USCS.ID,Gravels,Sands,Fines,Clays,Silts,Organic,Water,MAP,Go_Units="MPa",Vs_Units="m/s",SID,POP,POP_Units="kPa")
+  SiteProperties <- data.table(Hs,Hw,NL,Z500,Z1000,SID,Go,mo,Ts,VSo,VS30,UID=USCS.ID,Gravels,Sands,Fines,Clays,Silts,Organic,Water,MAP,Go_Units="MPa",Vs_Units="m/s",SID,POP,POP_Units="kPa")
 
 
   SiteLayers <- data.table(
