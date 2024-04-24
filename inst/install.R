@@ -1,5 +1,5 @@
 file.remove("NAMESPACE") |> suppressWarnings()
-source("data-raw/sysdata.R")
+# source("data-raw/sysdata.R")
 usethis::use_proprietary_license(copyright_holder = "Alejandro Verri Kozlowski")
 devtools::document()
 devtools::check()

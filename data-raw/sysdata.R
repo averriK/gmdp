@@ -49,7 +49,7 @@ for(FILE in LIST){
 
   SiteTable <- rbindlist(list(AUX,SiteTable),use.names = TRUE)
 }
-
+SiteTable <- SiteTable |> na.omit()
 # saveRDS(SiteTable,file=file.path("data-raw","SiteTable.Rds"))
 # fwrite(SiteTable,file=file.path("data-raw","SiteTable.csv"),yaml = TRUE)
 # usethis::use_data(SiteTable,overwrite = TRUE, internal = FALSE,version = 3)
