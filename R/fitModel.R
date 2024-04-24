@@ -16,7 +16,15 @@
 #'
 #' @examples
 #'
-fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.50,regression="qrf",removeZeroInstances=FALSE,uniqueResponses=FALSE,ntree=500) {
+#'
+
+# ********************************
+# Fix level for lm
+# remove rf. keep qrf only
+# set default level to 0.16,0.50,0.84
+
+
+fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.95,regression="qrf",removeZeroInstances=FALSE,uniqueResponses=FALSE,ntree=500) {
   . <- NULL
   # Capture the variable arguments as a vector
   stopifnot(y %in% names(.data))
@@ -71,7 +79,7 @@ fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.50,regression="qrf",r
   if(is.null(.newdata)){
     # .newdata==NULL: build model. Return model
 
-    Yp <- predict(.model,newdata=DATA, what = level) |> unname()
+    Yp <- predict(.model,newdata=DATA, what = 0.50) |> unname()
     RSS <- (Y - Yp) %*% (Y - Yp) |> as.double()
     MSE <- RSS / length(Y) # caret::MSE(Yp,Y)
     RMSE <- sqrt(MSE) # caret::RMSE(Yp,Y)
@@ -84,8 +92,16 @@ fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.50,regression="qrf",r
   }
 
   if(is.data.table(.newdata)){
+
     # .newdata!=NULL: build model, predict new data, return response
-    VALUE <- predict(.model,newdata=.newdata, what = level) |> unname()
+    VALUE <- switch(regression,
+           "qrf"=predict(.model,newdata=.newdata, what = sort(c(abs(1-level),0.50,level))) |> as.vector(),
+           "rf"=predict(.model,newdata=.newdata) |> unname() |> as.vector(),
+           "lm"=predict(.model,newdata=.newdata, type="response",interval = "prediction",level=level) |> as.vector()
+    )
+
+
+    # names(VALUE) <- level
 
 
 
