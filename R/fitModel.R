@@ -92,17 +92,15 @@ fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.95,regression="qrf",r
   }
 
   if(is.data.table(.newdata)){
-
     # .newdata!=NULL: build model, predict new data, return response
-    VALUE <- switch(regression,
-           "qrf"=predict(.model,newdata=.newdata, what = sort(c(abs(1-level),0.50,level))) |> as.vector(),
-           "rf"=predict(.model,newdata=.newdata) |> unname() |> as.vector(),
-           "lm"=predict(.model,newdata=.newdata, type="response",interval = "prediction",level=level) |> as.vector()
-    )
+    if(regression=="lm"){
+      VALUE <- (predict(.model,newdata=.newdata,interval = "prediction",level=level)) |> as.data.table()
+      VALUE <- VALUE$upr
+    }
 
-
-    # names(VALUE) <- level
-
+    if(regression=="qrf"){
+      VALUE <- predict(.model,newdata=.newdata, what = level)
+    }
 
 
     return(VALUE)
