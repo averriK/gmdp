@@ -19,6 +19,8 @@ fitModel(
 \arguments{
 \item{.data}{data.table}
 
+\item{x}{character}
+
 \item{y}{character}
 
 \item{.newdata}{vector}
@@ -32,8 +34,6 @@ fitModel(
 \item{uniqueResponses}{logical}
 
 \item{ntree}{integer}
-
-\item{.x}{character}
 }
 \value{
 vector

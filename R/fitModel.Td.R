@@ -5,9 +5,9 @@
 #' @param Bmax Double. Maximum width in m
 #' @param Bo Double. TSF Crest in m
 #' @param .newdata Data frame. New data to predict
-#' @param .level Double. Confidence level (0-1)
+#' @param level Double. Confidence level (0-1)
 #' @param s Double. Slope S=1/tan(beta)
-#' @param .regression String. Regression method
+#' @param regression String. Regression method
 #'
 #' @return List
 #' @export fitModel.Td

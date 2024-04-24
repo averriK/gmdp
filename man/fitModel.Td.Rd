@@ -28,9 +28,9 @@ fitModel.Td(
 
 \item{.newdata}{Data frame. New data to predict}
 
-\item{.level}{Double. Confidence level (0-1)}
+\item{level}{Double. Confidence level (0-1)}
 
-\item{.regression}{String. Regression method}
+\item{regression}{String. Regression method}
 }
 \value{
 List

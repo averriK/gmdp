@@ -9,7 +9,7 @@
 #' @param removeZeroInstances logical
 #' @param uniqueResponses logical
 #' @param ntree integer
-#' @param .x character
+#' @param x character
 #'
 #' @return vector
 #' @export fitModel
@@ -17,9 +17,10 @@
 #' @examples
 #'
 fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.50,regression="qrf",removeZeroInstances=FALSE,uniqueResponses=FALSE,ntree=500) {
+  . <- NULL
   # Capture the variable arguments as a vector
   stopifnot(y %in% names(.data))
-
+. <- NULL
   if(!is.null(x)) {
     # .newdata==NULL: build model. Return model. ignore .newdata
     VARS <- x
