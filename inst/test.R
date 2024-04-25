@@ -3,4 +3,4 @@ GMDP <- buildGMDP(path="~/Database/gmdp/output/classical/BC/ARMA611",IDo="ARMA61
 
 
 devtools::load_all()
-buildTable.Kmax(.x=GMDP$UHSTable,Vs30o=seq(200,400,by=10),Tso=c(0.11,0.17),Dao=c(5.0,15.0),p=0.50,TRo=c(500,5000,10000))
+buildTable.Kmax(.x=GMDP$UHSTable,Vs30o=c(200,300,400),Tso=0.12,Dao=15.0,po=0.50,TRo=c(500,5000,10000))

@@ -6,7 +6,7 @@
 \usage{
 buildDSRA(
   Hs,
-  Hw = 0,
+  W = 0,
   USCS,
   Group = NULL,
   h = 0.5,
@@ -19,7 +19,7 @@ buildDSRA(
 \arguments{
 \item{Hs}{Scalar Layer Thickness  in m}
 
-\item{Hw}{Scalar. Water Table Depth in m.  zw = Hs-Hw}
+\item{W}{Scalar. Water Table Depth in \% Hs.  zw = Hs-W*Hs}
 
 \item{USCS}{Vector. Unified Soil Classification System codes}
 

@@ -27,7 +27,6 @@
   }
 }
 
-
 .runGROUP <- function(FILE,Group,Hs,W=0,POP=0,NITER=10){
   for(group in Group){
     DT <- data.table()
@@ -57,26 +56,14 @@
 
 
 .mapLayers <- function(UID,hs,USCS=ValidUSCS){
+
   DT <- data.table(UID,hs)
   Hs=sum(hs)
 
-  DT <-  DT[, .(hs = round(sum(hs)/Hs*100)), by = UID]
+  DT <-  DT[, list(hs = round(sum(hs)/Hs*100)), by = UID]
   DT <- dcast(DT, formula = "1 ~ UID", value.var = "hs", fill = 0)
   DT[, (USCS) := lapply(USCS, function(u) ifelse(u %in% names(DT),DT[[u]],0))]
   DT <- DT[, .SD, .SDcols = USCS]
   return(DT)
 }
-
-
-.checkUSCS <- function(.x,UID,exact_match=FALSE){
-  X <- str_split(UID,pattern = "[[.]]") |> unlist()
- if(exact_match){
-   VALUE <- unname(all(X %in% .x)|> unname())
- } else {
-   VALUE <- unname(all(.x %in% X)|> unname())
- }
-  return(VALUE)
-}
-
-# > Z <- lapply(SiteTable$UID,function(U){.checkUSCS (.x=c("MH","CH","ML","CL"),U,exact_match=TRUE)})
 
