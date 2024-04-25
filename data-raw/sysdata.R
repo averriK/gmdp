@@ -96,4 +96,6 @@ for(FILE in FILES){
 
 # --------------------------------------------
 
-usethis::use_data(CylinderRoots,ShearModelParameters,VoidRatiosUSCS,RelativeDensityRanges,UnitWeightRanges,ParticleSize,USCS,SiteTable,ValidSands,ValidGravels,ValidSilts,ValidClays,ValidOrganic,ValidFines,ValidCoarse,ValidUSCS,ValidGroups,overwrite = TRUE, internal = TRUE,version = 3)
+usethis::use_data(ShearModelParameters,VoidRatiosUSCS,RelativeDensityRanges,UnitWeightRanges,ParticleSize,USCS,ValidSands,ValidGravels,ValidSilts,ValidClays,ValidOrganic,ValidFines,ValidCoarse,ValidUSCS,ValidGroups,overwrite = TRUE, internal = TRUE)
+
+usethis::use_data(CylinderRoots,SiteTable,overwrite = TRUE, internal = FALSE)
