@@ -54,5 +54,4 @@ fitModel.Td <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,s=NULL,material,level=0.5
   Ts <- (4*pi*Hmax/(an*(2 - mo)*VSo))
   return(Ts)
 
-
 }

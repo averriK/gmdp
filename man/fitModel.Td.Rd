@@ -10,7 +10,7 @@ fitModel.Td(
   Bmax = NULL,
   Bo = NULL,
   s = NULL,
-  .newdata,
+  material,
   level = 0.5,
   regression = "qrf"
 )
@@ -26,7 +26,7 @@ fitModel.Td(
 
 \item{s}{Double. Slope S=1/tan(beta)}
 
-\item{.newdata}{Data frame. New data to predict}
+\item{material}{Data frame. New data to predict}
 
 \item{level}{Double. Confidence level (0-1)}
 
