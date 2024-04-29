@@ -5,66 +5,81 @@
 #' @param engine c("flextable","kableExtra")
 #' @param po c("mean",0.16,0.50,0.84)
 #' @param Vs30o Vs30 in m/s
-#' @param SIDo Site Class
 #' @param TRo Return Period in years
 #' @param Tno Period in seconds
+#' @param tagUnits boolean
 #'
 #' @return Table
 #' @export buildTable.Sa
 #' @import data.table
 #' @examples
 #'
-buildTable.Sa <- function(x,Tno=NULL,size=12,po=c(0.16,0.50,0.84),engine="flextable",TRo=c(500,1000,2500,5000,10000),Vs30o=NULL,SIDo=NULL){
+buildTable.Sa <- function(x,Tno,TRo,size=12,po=NULL,engine="flextable",Vs30o=NULL,tagUnits=TRUE){
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
 
+  DT <- x[,.(Tn,TR,p,Sa,Vs30,Vref,SID)]
+
   . <- NULL
+  # browser()
 
+  # Check Vs30o
 
-
-
-  if(is.null(Tno)){
-    OUT <- buildTable.PGA(x=x,size=size,po=po,engine=engine,TRo=TRo,Vs30o=Vs30o,SIDo=SIDo)
-    return(OUT)
+  if(is.null(Vs30o) ){
+    Vref <- DT[Vs30==Vref]$Vs30 |> unique()
+    DT <-DT[Vs30==Vref[1],-c("Vref")]
   }
 
-  DT <- x$UHSTable
-  DT <- DT[Tn %in% Tno][,list(Tn,TR,p,Sa=round(Sa,digits = 3),Vs30,Vred,SID)] |> unique()
-  data.table::setnames(DT,old=c("Tn"),new=c("Tn[s]"))
-  DT[,Sa:=round(Sa,digits=3)]
-
-  if(!is.null(Vs30o)){
-    SIDo <- Vs30toSID(Vs30o)
-    message(sprintf("Building Table for Vs30 %f m/s",Vs30o))
+  if(!is.null(Vs30o) & all(Vs30o %in% unique(DT$Vs30))){
     DT <- DT[Vs30 %in% Vs30o,-c("Vref")]
+
+    if(tagUnits==TRUE){
+      data.table::setnames(DT,old=c("Vs30"),new=c("Vs30[m/s]"))
+    }
   }
 
-  if(!is.null(SIDo) & is.null(Vs30o)){
-    message(sprintf("Building Table for SID %s",SIDo))
-    DT <-DT[Vs30==Vref & SID %in% SIDo,-c("Vref")]
-  }
-
-  if(is.null(Vs30o) & is.null(SIDo)){
-    Vs30o <- DT[Vs30==Vref]$Vs30 |> unique()
-    DT <-DT[Vs30 %in% Vs30o,-c("Vref")]
-  }
-
-
+  # Check po
   if(is.null(po)){
     DT <- DT[p == "mean",-c("p")]
   }
-  if(!is.null(po)){
+  if(!is.null(po)  & all(po %in% unique(DT$p))){
     DT <- DT[p %in% po]
   }
 
-  DT <- DT[TR %in% TRo][order(TR)]
 
-  data.table::setnames(DT,old=c("Vs30"),new=c("Vs30[m/s]"))
-  data.table::setnames(DT,old=c("TR","Sa"),new=c("TR[yr]","Sa[g]"))
+  # Check Tno
+  if( all(Tno %in% unique(DT$Tn))){
+    DT <- DT[Tn %in% Tno]
+    if(tagUnits==TRUE){
+      data.table::setnames(DT,old=c("Tn"),new=c("Tn[s]"))
+    }
+  }
+
+  # Check TRo
+
+
+  if(all(TRo %in% unique(DT$TR))){
+    DT <- DT[TR %in% TRo]
+    if(tagUnits==TRUE){
+      data.table::setnames(DT,old=c("TR"),new=c("TR[yr]"))
+    }
+  }
+
+  # Rounding
+  DT[,Sa := round(Sa,3)]
+
+  if(tagUnits==TRUE){
+    if(all(DT$Tn==0)){
+      data.table::setnames(DT,old=c("Sa"),new=c("PGA[g]"))
+    } else {
+      data.table::setnames(DT,old=c("Sa"),new=c("Sa[g]"))
+    }
+
+  }
+
   return(DT)
 }
-
 
 .predict.Sa <- function(x,Tno,Vs30o,TRo){
   DATA <- x

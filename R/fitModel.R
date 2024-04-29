@@ -25,10 +25,12 @@
 
 
 fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.95,regression="qrf",removeZeroInstances=FALSE,uniqueResponses=FALSE,ntree=500) {
-  . <- NULL
+  on.exit(expr = {
+    rm(list = ls())
+  }, add = TRUE)
+  .  <- NULL
   # Capture the variable arguments as a vector
   stopifnot(y %in% names(.data))
-. <- NULL
   if(!is.null(x)) {
     # .newdata==NULL: build model. Return model. ignore .newdata
     VARS <- x
@@ -48,7 +50,9 @@ fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.95,regression="qrf",r
   YCOL <- y
   COLS <- c(XCOLS, YCOL)
   #remmove N/A
-  DATA <- .data[, ..COLS, with = FALSE] |> na.omit() |> unique()
+
+  # DATA <- .data[, ..COLS, with = FALSE] |> na.omit() |> unique()
+  DATA <- .data[, COLS, with = FALSE] |> na.omit() |> unique()
 
   # Remove duplicated responses
   if(uniqueResponses){
@@ -67,7 +71,8 @@ fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.95,regression="qrf",r
   if(nrow(DATA) == 0) {
     stop("No valid data found")
   }
-  X <- DATA[, ..XCOLS, with = FALSE]
+  # X <- DATA[, ..XCOLS, with = FALSE]
+  X <- DATA[, XCOLS, with = FALSE]
   Y <- DATA$Y
 
   .model <- switch(regression,

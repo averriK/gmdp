@@ -6,13 +6,13 @@
 \usage{
 buildTable.Sa(
   x,
-  Tno = NULL,
+  Tno,
+  TRo,
   size = 12,
-  po = c(0.16, 0.5, 0.84),
+  po = NULL,
   engine = "flextable",
-  TRo = c(500, 1000, 2500, 5000, 10000),
   Vs30o = NULL,
-  SIDo = NULL
+  tagUnits = TRUE
 )
 }
 \arguments{
@@ -20,17 +20,17 @@ buildTable.Sa(
 
 \item{Tno}{Period in seconds}
 
+\item{TRo}{Return Period in years}
+
 \item{size}{Font size}
 
 \item{po}{c("mean",0.16,0.50,0.84)}
 
 \item{engine}{c("flextable","kableExtra")}
 
-\item{TRo}{Return Period in years}
-
 \item{Vs30o}{Vs30 in m/s}
 
-\item{SIDo}{Site Class}
+\item{tagUnits}{boolean}
 }
 \value{
 Table

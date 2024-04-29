@@ -20,6 +20,7 @@
 #'
 fitModel.Td <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,s=NULL,material,level=0.5,regression="qrf"){
   on.exit(expr={rm(list = ls())}, add = TRUE)
+  . <- NULL
 
 
   if(is.null(Bmax) && is.null(Bo) && is.null(lo) && is.null(s)){
