@@ -70,15 +70,14 @@ buildTable.Sa <- function(x,Tno,TRo,size=12,po=NULL,engine="flextable",Vs30o=NUL
   DT[,Sa := round(Sa,3)]
 
   if(tagUnits==TRUE){
-    if(all(DT$Tn==0)){
-      data.table::setnames(DT,old=c("Sa"),new=c("PGA[g]"))
-    } else {
-      data.table::setnames(DT,old=c("Sa"),new=c("Sa[g]"))
-    }
+    if(all(DT$Tn==0)){data.table::setnames(DT,old=c("Sa"),new=c("PGA[g]"))}
+    else {data.table::setnames(DT,old=c("Sa"),new=c("Sa[g]"))}
 
+  } else {
+    if(all(DT$Tn==0)){data.table::setnames(DT,old=c("Sa"),new=c("PGA"))}
   }
 
-  return(DT)
+  return(DT[])
 }
 
 .predict.Sa <- function(x,Tno,Vs30o,TRo){
