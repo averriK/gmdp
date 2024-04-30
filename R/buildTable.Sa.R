@@ -68,15 +68,14 @@ buildTable.Sa <- function(x,Tno,TRo,size=12,po=NULL,engine="flextable",Vs30o=NUL
 
   # Rounding
   DT[,Sa := round(Sa,3)]
-
+  if(tagUnits==FALSE & all(DT$Tn==0) ){data.table::setnames(DT,old="Sa",new="PGA")}
   if(tagUnits==TRUE){
-    if(all(DT$Tn==0)){data.table::setnames(DT,old=c("Sa"),new=c("PGA[g]"))}
-    else {data.table::setnames(DT,old=c("Sa"),new=c("Sa[g]"))}
-
-  } else {
-    if(all(DT$Tn==0)){data.table::setnames(DT,old=c("Sa"),new=c("PGA"))}
+    if(all(DT$Tn==0)){
+      data.table::setnames(DT,old=c("Sa"),new=c("PGA[g]"))
+    } else {
+      data.table::setnames(DT,old=c("Sa"),new=c("Sa[g]"))
+    }
   }
-
   return(DT[])
 }
 

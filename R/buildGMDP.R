@@ -119,7 +119,9 @@ buildGMDP <- function(path, IDo="00000000", ITo,Vref=760,engine="openquake",Vs30
     Vs30_SET <- c(S1,S2,Vref) |> unique() |> sort()
     for (Vs in Vs30_SET) {
       message(sprintf("> Building AEP Site Response model for Vs30 %4.1f m/s...", Vs))
-      AUX <- UHSTable[, fitModel.AF.TR(.x=.SD,p=p,Tn=Tn, Vs30 = Vs, Vref = Vref), by = .(p,Tn)]
+      # AF estimated only as mean value. Ignoring quantiles from Sa(Tn). Setting p=0.50
+      # Each (p, Tn) set results in a data.table .x with TR rows
+      AUX <- UHSTable[, fitModel.AF.TR(.x=.SD,q=0.50,Tn=Tn, Vs30 = Vs, Vref = Vref), by = .(p,Tn)]
       AFTRmodel <- data.table::rbindlist(list(AFTRmodel, AUX), use.names = TRUE)
     }
   }

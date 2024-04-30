@@ -2,7 +2,7 @@
 #' Amplification Factor AF, from Stewart Et Al. 2016
 #'
 #' @param .x GMDP object
-#' @param p Double. Period in seconds
+#' @param q Double. quantile
 #' @param Tn Double. Natural Period
 #' @param Vs30 Double. Vs30 in m/s
 #' @param Vref Double. Reference Vs30 in m/s
@@ -20,11 +20,13 @@
 #' @examples
 #'
 
-fitModel.AF.TR <- function(.x,p,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
+fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
 
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
+
+
 
   OK <- length(Vref) == 1 & length(Vs30) == 1
   # OK <- OK & (Vref %in% c(3000, 760))
@@ -214,7 +216,12 @@ fitModel.AF.TR <- function(.x,p,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
 
   b <- C7603000 * f3I(Tn)
   sdLnAF <- sqrt(sdL^2 + sdI^2 + sdNL^2)
-
+  if(q!="mean"){
+    p <- as.numeric(q)
+    beta <- qnorm(p=p,sd=sdLnAF) |> exp()
+  } else {
+    beta <- exp(1/2*sdLnAF^2)
+  }
   DT <- data.table::data.table(
     .x,
     Vref = Vref,
@@ -225,7 +232,7 @@ fitModel.AF.TR <- function(.x,p,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
     muI = muI,
     muNL = muNL,
     muLnAF = muLnAF,
-    AF = exp(muLnAF),
+    AF = exp(muLnAF)*beta,
     sdL = sdL,
     sdI = sdI,
     sdNL = sdNL,
