@@ -118,6 +118,6 @@ SiteClass <- data.table::data.table(
 
 # --------------------------------------------
 
-usethis::use_data(ShearModelParameters,VoidRatiosUSCS,RelativeDensityRanges,UnitWeightRanges,ParticleSize,USCS,ValidSands,ValidGravels,ValidSilts,ValidClays,ValidOrganic,ValidFines,ValidCoarse,ValidUSCS,ValidGroups,overwrite = TRUE, internal = TRUE)
+usethis::use_data(VoidRatiosUSCS,RelativeDensityRanges,UnitWeightRanges,ParticleSize,USCS,ValidSands,ValidGravels,ValidSilts,ValidClays,ValidOrganic,ValidFines,ValidCoarse,ValidUSCS,ValidGroups,overwrite = TRUE, internal = TRUE)
 
-usethis::use_data(CylinderRoots,SiteTable,SiteClass,overwrite = TRUE, internal = FALSE)
+usethis::use_data(CylinderRoots,SiteTable,SiteClass,ShearModelParameters,overwrite = TRUE, internal = FALSE)
