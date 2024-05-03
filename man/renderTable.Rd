@@ -4,7 +4,13 @@
 \alias{renderTable}
 \title{Title}
 \usage{
-renderTable(x, fontname = "Helvetica", size = 10, border.color = "gray")
+renderTable(
+  x,
+  fontname = "Helvetica",
+  size = 10,
+  border.color = "gray",
+  package = "gt"
+)
 }
 \arguments{
 \item{x}{Data frame.}
@@ -14,9 +20,11 @@ renderTable(x, fontname = "Helvetica", size = 10, border.color = "gray")
 \item{size}{Numeric. Font size.}
 
 \item{border.color}{String. Border color.}
+
+\item{package}{String. Package name.}
 }
 \value{
-flextable
+table
 }
 \description{
 Title
