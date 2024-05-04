@@ -15,7 +15,7 @@
 #'
 #' @examples
 #'
-.fitModel.an <- function(no=1,mo,lo,OSF=0.30,level=0.95){
+.fitModel.an <- function(no=1,mo,lo,OSF=0.30,level="mean"){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   # OK <- exists("CylinderRootsModel") & !is.null(CylinderRootsModel)
   OK <- exists("CylinderRoots") & !is.null(CylinderRoots)

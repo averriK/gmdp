@@ -24,13 +24,14 @@
 # set default level to 0.16,0.50,0.84
 
 
-fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.95,regression="qrf",removeZeroInstances=FALSE,uniqueResponses=FALSE,ntree=500) {
+fitModel <- function(.data, x=NULL,y,.newdata=NULL,level="mean",regression="qrf",removeZeroInstances=FALSE,uniqueResponses=FALSE,ntree=500) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
   .  <- NULL
   # Capture the variable arguments as a vector
   stopifnot(y %in% names(.data))
+  stopifnot(length(level)==1)
   if(!is.null(x)) {
     # .newdata==NULL: build model. Return model. ignore .newdata
     VARS <- x
@@ -83,8 +84,13 @@ fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.95,regression="qrf",r
 
   if(is.null(.newdata)){
     # .newdata==NULL: build model. Return model
+    if(level=="mean"){
+      Yp <- predict(.model,newdata=DATA, what = mean) |> unname()
+    } else {
+      Yp <- predict(.model,newdata=DATA, what = level) |> unname()
+    }
 
-    Yp <- predict(.model,newdata=DATA, what = 0.50) |> unname()
+
     RSS <- (Y - Yp) %*% (Y - Yp) |> as.double()
     MSE <- RSS / length(Y) # caret::MSE(Yp,Y)
     RMSE <- sqrt(MSE) # caret::RMSE(Yp,Y)
@@ -99,12 +105,23 @@ fitModel <- function(.data, x=NULL,y,.newdata=NULL,level=0.95,regression="qrf",r
   if(is.data.table(.newdata)){
     # .newdata!=NULL: build model, predict new data, return response
     if(regression=="lm"){
-      VALUE <- (predict(.model,newdata=.newdata,interval = "prediction",level=level)) |> as.data.table()
-      VALUE <- VALUE$upr
+      if(level=="mean"){
+        VALUE <- (predict(.model,newdata=.newdata,interval = "prediction",what=0.95)) |> as.data.table()
+        VALUE <- VALUE$fit
+      } else {
+        VALUE <- (predict(.model,newdata=.newdata,interval = "prediction",what=level)) |> as.data.table()
+        VALUE <- VALUE$upr
+      }
+
     }
 
     if(regression=="qrf"){
-      VALUE <- predict(.model,newdata=.newdata, what = level)
+      if(level=="mean"){
+        VALUE <- predict(.model,newdata=.newdata, what = mean)
+      } else {
+        VALUE <- predict(.model,newdata=.newdata, what = level)
+      }
+
     }
 
 

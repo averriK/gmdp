@@ -1,12 +1,8 @@
 #' Title
 #'
-#' @param Hmax Double. Height in m
-#' @param lo Double. Truncation ratio
-#' @param Bmax Double. Maximum width in m
-#' @param Bo Double. TSF Crest in m
-#' @param material Data frame. New data to predict
+#' @param .geometry Data frame
+#' @param .material Data frame
 #' @param level Double. Confidence level (0-1)
-#' @param s Double. Slope S=1/tan(beta)
 #' @param regression String. Regression method
 #'
 #' @return List
@@ -18,41 +14,52 @@
 #'
 #' @examples
 #'
-fitModel.Td <- function(Hmax,lo=NULL,Bmax=NULL,Bo=NULL,s=NULL,material,level=0.5,regression="qrf"){
+fitModel.Td <- function(.geometry,.material,level="mean",regression="qrf"){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   . <- NULL
-
-
-  if(is.null(Bmax) && is.null(Bo) && is.null(lo) && is.null(s)){
-    stop("At least one of the following parameters must be defined: Bmax, Bo, lo,S")
+  GVARS <- names(.geometry)
+  MVARS <- names(.material)
+  lo <- NULL
+  if(!(all(c("VSo","mo") %in% MVARS))){
+    stop("Invalid .material data.table")
+  }
+  if(!(any(c("B","b","lo","s")%in% GVARS))){
+  # if(is.null(B) && is.null(b) && is.null(lo) && is.null(s)){
+    stop("At least one of the following parameters must be defined: B, b, lo,S")
   }
 
-  if(is.null(lo) && !is.null(Bmax) && !is.null(Bo)){
-    lo <- round(Bo/Bmax,digits=2)
+  if("lo" %in% GVARS){
+    lo <- .geometry$lo
   }
 
-  if(is.null(lo) && !is.null(s) && !is.null(Bo)){
-    Bmax <- 2*Hmax*s+Bo
-    lo <- round(Bo/Bmax,digits=2)
+  if(!("lo"%in% GVARS) & all(c("B","b") %in% GVARS)){
+  # if(is.null(lo) && !is.null(B) && !is.null(b)){
+    b <- .geometry$b
+    B <- .geometry$B
+    lo <- b/B
   }
 
-  INTERP <- FALSE
-  if(all(lo<=max(CylinderRoots[n==1]$l) & lo>=min(CylinderRoots[n==1]$l) & mo<=max(CylinderRoots[n==1]$m) & mo>=min(CylinderRoots[n==1]$m))){
-    INTERP <- TRUE
-  }
-  #check lambda con CylinderRoots
-  DATA <- data.table(Hs=Hmax,material,l=lo)
 
-  Go <- fitModel(.data = SiteTable, y="Go",.newdata=DATA,level=level,regression=regression)
-  VSo <- fitModel(.data = SiteTable, y="VSo",.newdata=DATA,level=level,regression=regression)
-  mo <- fitModel(.data = SiteTable, y="mo",.newdata=DATA,level=level,regression=regression)
+  if(!("lo"%in% GVARS) & all(c("s","b") %in% GVARS)){
+  # if(is.null(lo) && !is.null(s) && !is.null(b)){
+    Hs <- .geometry$Hs
+    b <- .geometry$b
+    s <- .geometry$s
+    B <- 2*Hs*s+b
+    lo <- b/B
+  }
+
+  stopifnot(!is.null(lo))
+
   DATA <- CylinderRoots[n==1,.(m,l,an)]
-  # browser()
-  # if(INTERP==TRUE){
-  #   with(DATA, akima::interp(x = l, y = m, z = an, xo = lo, yo = mo[1]))
-  # }
-  an <- fitModel(.data=CylinderRoots[n==1,.(m,l,an)], y="an",.newdata=data.table(m=mo,l=lo),level=level,regression=regression)
-  Ts <- (4*pi*Hmax/(an*(2 - mo)*VSo))
-  return(Ts)
+  mo <- .material$mo
+  .newdata <- data.table(m=mo,l=lo)
+  an <- fitModel(.data=CylinderRoots[n==1,.(m,l,an)], y="an",.newdata=.newdata,level=level,regression="lm")
+
+  # Build geometries and materials scenarios
+  TS <- data.table(.material[,.(VSo,mo)],Hs=.geometry$Hs,an,level=level)
+  TS[,Ts:=(4*pi*Hs/(an*(2 - mo)*VSo))]
+
+  return(TS[])
 
 }

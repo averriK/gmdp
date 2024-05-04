@@ -4,29 +4,12 @@
 \alias{fitModel.Td}
 \title{Title}
 \usage{
-fitModel.Td(
-  Hmax,
-  lo = NULL,
-  Bmax = NULL,
-  Bo = NULL,
-  s = NULL,
-  material,
-  level = 0.5,
-  regression = "qrf"
-)
+fitModel.Td(.geometry, .material, level = "mean", regression = "qrf")
 }
 \arguments{
-\item{Hmax}{Double. Height in m}
+\item{.geometry}{Data frame}
 
-\item{lo}{Double. Truncation ratio}
-
-\item{Bmax}{Double. Maximum width in m}
-
-\item{Bo}{Double. TSF Crest in m}
-
-\item{s}{Double. Slope S=1/tan(beta)}
-
-\item{material}{Data frame. New data to predict}
+\item{.material}{Data frame}
 
 \item{level}{Double. Confidence level (0-1)}
 

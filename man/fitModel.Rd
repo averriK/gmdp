@@ -9,7 +9,7 @@ fitModel(
   x = NULL,
   y,
   .newdata = NULL,
-  level = 0.95,
+  level = "mean",
   regression = "qrf",
   removeZeroInstances = FALSE,
   uniqueResponses = FALSE,
