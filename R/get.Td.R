@@ -6,7 +6,7 @@
 #' @param regression String. Regression method
 #'
 #' @return List
-#' @export fitModel.Td
+#' @export get.Td
 #'
 #' @import data.table
 #' @import quantregForest
@@ -14,7 +14,7 @@
 #'
 #' @examples
 #'
-fitModel.Td <- function(.geometry,.material,level="mean",regression="qrf"){
+get.Td <- function(.geometry,.material,regression="qrf"){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   . <- NULL
   GVARS <- names(.geometry)
@@ -54,10 +54,10 @@ fitModel.Td <- function(.geometry,.material,level="mean",regression="qrf"){
   DATA <- CylinderRoots[n==1,.(m,l,an)]
   mo <- .material$mo
   .newdata <- data.table(m=mo,l=lo)
-  an <- fitModel(.data=CylinderRoots[n==1,.(m,l,an)], y="an",.newdata=.newdata,level=level,regression="lm")
+  an <- fitModel(.data=CylinderRoots[n==1,.(m,l,an)], y="an",.newdata=.newdata,regression="lm")
 
   # Build geometries and materials scenarios
-  TS <- data.table(.material[,.(VSo,mo)],Hs=.geometry$Hs,an,level=level)
+  TS <- data.table(.material,Hs=.geometry$Hs,an)
   TS[,Ts:=(4*pi*Hs/(an*(2 - mo)*VSo))]
 
   return(TS[])
