@@ -4,7 +4,7 @@
 \alias{.fitModel.an}
 \title{Title}
 \usage{
-.fitModel.an(no = 1, mo, lo, OSF = 0.3, level = 0.95)
+.fitModel.an(no = 1, mo, lo, OSF = 0.3, level = "mean")
 }
 \arguments{
 \item{no}{Integer. Number of mode n=1..8}

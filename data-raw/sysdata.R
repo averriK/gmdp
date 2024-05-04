@@ -96,6 +96,28 @@ for(FILE in FILES){
 
 # --------------------------------------------
 
-usethis::use_data(ShearModelParameters,VoidRatiosUSCS,RelativeDensityRanges,UnitWeightRanges,ParticleSize,USCS,ValidSands,ValidGravels,ValidSilts,ValidClays,ValidOrganic,ValidFines,ValidCoarse,ValidUSCS,ValidGroups,overwrite = TRUE, internal = TRUE)
+SiteClass <- data.table::data.table(
+  SC=c("A","B","BC","C","CD","D","DE","E","F"),
+  Description=c(
+    "Hard rock",#A,>1500 m/s
+    "Medium hard rock",#B,910 to 1500 m/s
+    "Soft rock",#BC 640 to 910 m/s
+    "Very dense soil or hard clay",#C 440 to 640 m/s
+    "Dense sand of very stiff clay", #CD 300 to 440 m/s
+    "Medium dense sand or stiff clay",#D 210 to 300 m/s
+    "Loose sand or medium stiff clay",#DE 150 to 210 m/s
+    "Very loose sand or soft clay",#E
+    "Soils requiring site response analysis (ASCE/SEI 7-22 21.1)"),#F
 
-usethis::use_data(CylinderRoots,SiteTable,overwrite = TRUE, internal = FALSE)
+  "Vs30 (m/s)"=c(">1500",">910-1500",">640-910",">440-640",">300-440",">210-300",">150-210",">=150","*See section 20.2.1"),
+
+  "Vs30 (ft/s)"=c(">5000",">3000-5000",">2100-3000",">1450-2100",">1000-1450",">700-1000",">500-700",">=500","*See section 20.2.1"))
+
+
+
+
+# --------------------------------------------
+
+usethis::use_data(VoidRatiosUSCS,RelativeDensityRanges,UnitWeightRanges,ParticleSize,USCS,ValidSands,ValidGravels,ValidSilts,ValidClays,ValidOrganic,ValidFines,ValidCoarse,ValidUSCS,ValidGroups,overwrite = TRUE, internal = TRUE)
+
+usethis::use_data(CylinderRoots,SiteTable,SiteClass,ShearModelParameters,overwrite = TRUE, internal = FALSE)

@@ -4,12 +4,12 @@
 \alias{fitModel.AF.TR}
 \title{Amplification Factor AF, from Stewart Et Al. 2016}
 \usage{
-fitModel.AF.TR(.x, p, Tn, Vs30, Vref, Vl = 200, Vu = 2000)
+fitModel.AF.TR(.x, q = 0.5, Tn, Vs30, Vref, Vl = 200, Vu = 2000)
 }
 \arguments{
 \item{.x}{GMDP object}
 
-\item{p}{Double. Period in seconds}
+\item{q}{Double. quantile}
 
 \item{Tn}{Double. Natural Period}
 

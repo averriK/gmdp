@@ -63,5 +63,7 @@ Fines <- NULL
 Gravels <- NULL
 Sands <- NULL
 Water <- NULL
+Clays <- NULL
+Silts <- NULL
 PGAref <- NULL
 Mw <- NULL
