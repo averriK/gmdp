@@ -2,15 +2,14 @@
 #' Title
 #'
 #' @param fontname String. Font name.
-#' @param size Numeric. Font size.
+#' @param fontsize.header String Font size in px.
+#' @param fontsize.body String Font size in px.
 #' @param border.color String. Border color.
-#' @param x Data frame.
-#' @param package String. Package name.
+#' @param .x Data frame.
 #'
-#' @return table
+#' @return gt object
 #' @export renderTable
 #'
-#' @import flextable
 #' @import gt
 #' @import data.table
 #'
@@ -18,23 +17,27 @@
 #'
 #'
 
-renderTable <- function(x,fontname="Helvetica",size=10,border.color = "gray",package="gt"){
+renderTable <- function(.x,fontname="Helvetica",fontsize.header="11px",fontsize.body="10px",border.color = "blue"){
 
-  # flextable::use_df_printer()
-  if(package=="gt"){
-    flextable::set_flextable_defaults( font.family=fontname,border.color = border.color)
-    TABLE <- x |> flextable::flextable() |>
-      flextable::theme_vanilla() |>
-      flextable::fontsize(size=size,part = "all") |>
-      flextable::align(align="center",part="all") |>
-      flextable::align(align="left",j=2) |>
-      flextable::autofit(add_w = 0.1, add_h = 0.1, unit= "cm", hspans = "none",part="all") |>
-      flextable::font(fontname = fontname,part="all") |>
-      flextable::bold(part = "header")
-  }
-  if(package=="gt"){
-    TABLE <- x |> gt()
-  }
+  TABLE <- .x |> gt() |>
+
+    tab_style(
+      style = list(
+        cell_text(size = fontsize.body),
+        cell_borders(sides = "top", color = border.color, weight = "2px"),
+        cell_borders(sides = "bottom", color = border.color, weight = "2px")
+      ),
+      locations = cells_body(columns = everything())
+    ) |>
+
+    tab_style(
+      style = list(
+        cell_text(size = fontsize.header),
+        cell_text(weight = "bold")
+      ),
+      locations = cells_column_labels()
+    )
+
 
   return(TABLE)
 

@@ -5,26 +5,26 @@
 \title{Title}
 \usage{
 renderTable(
-  x,
+  .x,
   fontname = "Helvetica",
-  size = 10,
-  border.color = "gray",
-  package = "gt"
+  fontsize.header = "11px",
+  fontsize.body = "10px",
+  border.color = "blue"
 )
 }
 \arguments{
-\item{x}{Data frame.}
+\item{.x}{Data frame.}
 
 \item{fontname}{String. Font name.}
 
-\item{size}{Numeric. Font size.}
+\item{fontsize.header}{String Font size in px.}
+
+\item{fontsize.body}{String Font size in px.}
 
 \item{border.color}{String. Border color.}
-
-\item{package}{String. Package name.}
 }
 \value{
-table
+gt object
 }
 \description{
 Title
