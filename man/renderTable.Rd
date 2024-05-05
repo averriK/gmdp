@@ -29,3 +29,7 @@ gt object
 \description{
 Title
 }
+\examples{
+ShearModelParameters |> renderTable()
+
+}

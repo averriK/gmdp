@@ -14,26 +14,25 @@
 #' @import data.table
 #'
 #' @examples
-#'
+#' ShearModelParameters |> renderTable()
 #'
 
 renderTable <- function(.x,fontname="Helvetica",fontsize.header="11px",fontsize.body="10px",border.color = "blue"){
 
   TABLE <- .x |> gt() |>
-
     tab_style(
       style = list(
         cell_text(size = fontsize.body),
-        cell_borders(sides = "top", color = border.color, weight = "2px"),
-        cell_borders(sides = "bottom", color = border.color, weight = "2px")
+        css = "pointer-events: none;"  # Disable hover effects
       ),
-      locations = cells_body(columns = everything())
+      locations = cells_body(rows = everything(), columns = everything())
     ) |>
-
     tab_style(
       style = list(
         cell_text(size = fontsize.header),
-        cell_text(weight = "bold")
+        cell_text(weight = "bold"),
+        cell_borders(sides = "top", color = border.color, weight = "2px"),
+        cell_borders(sides = "bottom", color = border.color, weight = "2px")
       ),
       locations = cells_column_labels()
     )
