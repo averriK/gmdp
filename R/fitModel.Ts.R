@@ -1,4 +1,4 @@
-#' Title
+#' Site's Fundamental Period
 #'
 #' @param VSm Vector. Shear Wave Velocity profile in m/s (vector)
 #' @param hs Vector. Layer Thickness profile in m (vector)

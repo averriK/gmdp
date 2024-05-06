@@ -1,12 +1,11 @@
-#' Title
+#' Slope's Fundamental Period Table
 #'
 #' @param .geometry Data frame
 #' @param .material Data frame
-#' @param level Double. Confidence level (0-1)
 #' @param regression String. Regression method
 #'
 #' @return List
-#' @export get.Td
+#' @export buildTable.Ts
 #'
 #' @import data.table
 #' @import quantregForest
@@ -14,7 +13,7 @@
 #'
 #' @examples
 #'
-get.Td <- function(.geometry,.material,regression="qrf"){
+buildTable.Ts <- function(.geometry,.material,regression="qrf"){
   on.exit(expr={rm(list = ls())}, add = TRUE)
   . <- NULL
   GVARS <- names(.geometry)
