@@ -21,6 +21,8 @@ buildGMDP <- function(path, IDo="00000000", ITo,Vref=760,engine="openquake",Vs30
 
   # ********************************************************************* ----
   # Build AEPTable
+  # THIS VERSION REQUIRES THE INVESTIGATION TIME AS INPUT.
+  # RUNNING AS A BATCH PROCESS, ITo HAS TO BE OBTAINED FROM job.ini file in a previous stage
 
   message(sprintf("> Build AEP Table..."))
   AEPTable <- NULL
@@ -114,8 +116,8 @@ buildGMDP <- function(path, IDo="00000000", ITo,Vref=760,engine="openquake",Vs30
   AFTRmodel <- data.table()
   if(Vref %in% c(760,3000)){
     message(sprintf("> Fit Site Response model (Stewart2017) for ASCE site classes..."))
-    S1 <- seq(SIDtoVs30("E"), SIDtoVs30("BC"), by = Vs30_STEP)
-    S2 <- sapply(c("BC", "C", "CD", "D", "DE", "E"), SIDtoVs30) |> unname()
+    S1 <- seq(SIDtoVs30("E"), SIDtoVs30("A"), by = Vs30_STEP)
+    S2 <- sapply(c("B","BC", "C", "CD", "D", "DE", "E"), SIDtoVs30) |> unname()
     Vs30_SET <- c(S1,S2,Vref) |> unique() |> sort()
     for (Vs in Vs30_SET) {
       message(sprintf("> Building AEP Site Response model for Vs30 %4.1f m/s...", Vs))
