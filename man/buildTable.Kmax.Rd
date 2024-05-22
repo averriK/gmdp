@@ -11,7 +11,6 @@ buildTable.Kmax(
   Vs30o,
   size = 12,
   po = "mean",
-  engine = "flextable",
   TRo = c(500, 1000, 2500, 5000, 10000),
   tagUnits = FALSE
 )
@@ -28,8 +27,6 @@ buildTable.Kmax(
 \item{size}{font size}
 
 \item{po}{quantiles}
-
-\item{engine}{c("flextable")}
 
 \item{TRo}{return periods in years}
 

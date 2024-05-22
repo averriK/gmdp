@@ -2,7 +2,7 @@
 % Please edit documentation in R/fitModel.Ts.R
 \name{fitModel.Ts}
 \alias{fitModel.Ts}
-\title{Title}
+\title{Site's Fundamental Period}
 \usage{
 fitModel.Ts(VSm, hs, zm)
 }
@@ -17,5 +17,5 @@ fitModel.Ts(VSm, hs, zm)
 Double. Site's fundamental period Ts in seconds
 }
 \description{
-Title
+Site's Fundamental Period
 }

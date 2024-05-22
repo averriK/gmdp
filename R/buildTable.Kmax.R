@@ -6,7 +6,6 @@
 #' @param Vs30o number
 #' @param size font size
 #' @param po quantiles
-#' @param engine c("flextable")
 #' @param TRo return periods in years
 #' @param tagUnits boolean
 #'
@@ -18,7 +17,7 @@
 #' @examples
 #'
 #'
-buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",engine="flextable",TRo=c(500,1000,2500,5000,10000),tagUnits=FALSE){
+buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",TRo=c(500,1000,2500,5000,10000),tagUnits=FALSE){
   on.exit(expr = {rm(list = ls())  }, add = TRUE)
   . <- NULL
   # ****
@@ -44,7 +43,6 @@ buildTable.Kmax <- function(.x,Tso,Dao,Vs30o,size=12,po="mean",engine="flextable
   COLS <- colnames(DnTRmodel)[colnames(DnTRmodel) %in% colnames(UHSTable)]
   UHSTable <- UHSTable[DnTRmodel[, .(ID, p, Tn, Ts, TR, Dn, sdLnD, ky, Mw,Vs30, Vref,a, b, e)], on = COLS]
   UHSTable[, Dn_Unit := "cm"]
-  UHSTable[, Ts_Unit := "s"]
 
   # ********************************************************************* ----
   # Pseudo-static coefficient ----
