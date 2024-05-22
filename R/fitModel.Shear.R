@@ -9,6 +9,7 @@
 #' @export fitModel.Shear
 #'
 #' @import data.table
+#' @import xstats
 #' @import quantregForest
 #' @importFrom stats predict
 #'
@@ -57,11 +58,11 @@ fitModel.Shear <- function(.data=SiteTable,.newdata,level="mean",regression="qrf
     return(NULL)
   }
 
-  Go <- fitModel(.data = DATA, y="Go",.newdata=NEWDATA,level=level,regression=regression)
-  mo <- fitModel(.data = DATA, y="mo",.newdata=NEWDATA,level=level,regression=regression)
-  Ts <- fitModel(.data = DATA, y="Ts",.newdata=NEWDATA,level=level,regression=regression)
-  VSo <- fitModel(.data = DATA, y="VSo",.newdata=NEWDATA,level=level,regression=regression)
-  VS30 <- fitModel(.data = DATA, y="VS30",.newdata=NEWDATA,level=level,regression=regression)
+  Go <- fitModel(.data = DATA, response="Go",.newdata=NEWDATA,level=level,regression=regression)
+  mo <- fitModel(.data = DATA, response="mo",.newdata=NEWDATA,level=level,regression=regression)
+  Ts <- fitModel(.data = DATA, response="Ts",.newdata=NEWDATA,level=level,regression=regression)
+  VSo <- fitModel(.data = DATA, response="VSo",.newdata=NEWDATA,level=level,regression=regression)
+  VS30 <- fitModel(.data = DATA, response="VS30",.newdata=NEWDATA,level=level,regression=regression)
   return(data.table(Go=Go,mo=mo,Ts=Ts,VSo=VSo,VS30=VS30,NEWDATA,NR=NR))
 
 }

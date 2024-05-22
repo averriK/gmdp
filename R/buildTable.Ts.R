@@ -9,7 +9,8 @@
 #'
 #' @import data.table
 #' @import quantregForest
-#' @importFrom stats predict
+#' @import xstats
+#' @import stats
 #'
 #' @examples
 #'
@@ -53,7 +54,7 @@ buildTable.Ts <- function(.geometry,.material,regression="qrf"){
   DATA <- CylinderRoots[n==1,.(m,l,an)]
   mo <- .material$mo
   .newdata <- data.table(m=mo,l=lo)
-  an <- fitModel(.data=CylinderRoots[n==1,.(m,l,an)], y="an",.newdata=.newdata,regression="lm")
+  an <- fitModel(.data=CylinderRoots[n==1,.(m,l,an)], response="an",.newdata=.newdata,regression="lm")
 
   # Build geometries and materials scenarios
   TS <- data.table(.material,Hs=.geometry$Hs,an)
