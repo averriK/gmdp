@@ -28,6 +28,6 @@ fitModel.Ts <-  function(VSm,hs,zm) {
     B[j] <- hs[j]*(f[j+1]+f[j])^2
   }
   ws2 <- 4*sum(A)/sum(B)
-  Ts <- 2*pi/sqrt(ws2)
+  Ts <- (2*pi/sqrt(ws2)) |> round(3)
   return(Ts)
 }
