@@ -58,11 +58,11 @@ fitModel.Shear <- function(.data=SiteTable,.newdata,level="mean",regression="qrf
     return(NULL)
   }
 
-  Go <- fitModel(.data = DATA, response="Go",.newdata=NEWDATA,level=level,regression=regression)
-  mo <- fitModel(.data = DATA, response="mo",.newdata=NEWDATA,level=level,regression=regression)
-  Ts <- fitModel(.data = DATA, response="Ts",.newdata=NEWDATA,level=level,regression=regression)
-  VSo <- fitModel(.data = DATA, response="VSo",.newdata=NEWDATA,level=level,regression=regression)
-  VS30 <- fitModel(.data = DATA, response="VS30",.newdata=NEWDATA,level=level,regression=regression)
+  Go <- fitModel(.data = DATA, response="Go",.newdata=NEWDATA,level=level,regression=regression) |> round(1)
+  mo <- fitModel(.data = DATA, response="mo",.newdata=NEWDATA,level=level,regression=regression) |> round(3)
+  Ts <- fitModel(.data = DATA, response="Ts",.newdata=NEWDATA,level=level,regression=regression) |> round(2)
+  VSo <- fitModel(.data = DATA, response="VSo",.newdata=NEWDATA,level=level,regression=regression) |> round(0)
+  VS30 <- fitModel(.data = DATA, response="VS30",.newdata=NEWDATA,level=level,regression=regression) |> round(0)
   return(data.table(Go=Go,mo=mo,Ts=Ts,VSo=VSo,VS30=VS30,NEWDATA,NR=NR))
 
 }
