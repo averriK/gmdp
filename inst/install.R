@@ -6,5 +6,5 @@ devtools::check()
 remove.packages("gmdp")
 # devtools::install()
 ## PUSH MAIN
-remotes::install_github("averri/gmdp")
+remotes::install_github("averriK/gmdp")
 
