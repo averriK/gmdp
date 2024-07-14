@@ -51,7 +51,7 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
     )
     return(DT)
   }
-  PGAref <- .x$PGAref[1]
+  PGA <- .x$PGA[1]
 
   # Interpolated tables ----
   cI <- stats::approxfun(
@@ -141,7 +141,7 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
   )
 
   # Mean Value ----
-  muLnPGA <- log(PGAref)
+  muLnPGA <- log(PGA)
   if (Vref == 760) {
     C7603000 <- 2.275
   }

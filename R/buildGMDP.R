@@ -72,13 +72,29 @@ buildGMDP <- function(path, IDo="00000000",engine="openquake",Vs30=NULL,Vref) {
     message(sprintf("> Disaggregation data not available."))
   }
 
+#
+
 
 
   # ********************************************************************* ----
   # Build SaTR model
-
   message(sprintf("> Fit AEP  modelfrom %s...", path))
-  SaTRmodel <- AEPTable[Tn>=0, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("lat","lon","depth","Tn", "p")][, .(lat,lon,depth,Tn, p, a, b, c, sdLnA)]
+  Tn_PGA <- AEPTable[Tn>=0]$Tn |> min()
+  # browser()
+  Tn_PGV <- NULL
+  if(nrow(AEPTable[Tn<0])>0){
+    # Exclude PGV case
+    Tn_PGV <- AEPTable[Tn<0]$Tn |> min()
+    SaTRmodel <- AEPTable[Tn!=Tn_PGV, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("lat","lon","depth","Tn", "p")][, .(lat,lon,depth,Tn, p, a, b, c, sdLnA)]
+
+    # Include PGV case. Assume same AF than PGA case
+    SaTRmodel <- rbind(SaTRmodel,SaTRmodel[Tn==Tn_PGA][,Tn:=Tn_PGV])
+  } else {
+    SaTRmodel <- AEPTable[, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("lat","lon","depth","Tn", "p")][, .(lat,lon,depth,Tn, p, a, b, c, sdLnA)]
+  }
+
+
+
 
 
 
@@ -95,20 +111,30 @@ buildGMDP <- function(path, IDo="00000000",engine="openquake",Vs30=NULL,Vref) {
 # no NAs
   # ********************************************************************* ----
   # Get PGA at Vref
-  Tn_PGA <- UHSTable[Tn>=0]$Tn |> min()
-  browser()
-  PGA_table <- UHSTable[Tn == Tn_PGA, .(PGAref = Sa), by = .(p, TR)] |> unique()
+  if(!is.null(Tn_PGV)){
+    AUX1 <- UHSTable[Tn == Tn_PGA,.(PGA=Sa,Vs30=Vref),by=.(lat,lon,depth,p,TR)]
+    AUX2 <- UHSTable[Tn == Tn_PGV,.(PGV=Sa,Vs30=Vref),by=.(lat,lon,depth,p,TR)]
+    COLS <- colnames(AUX1)[colnames(AUX1) %in% colnames(AUX2)]
+    PeakTable <- AUX1[AUX2,on=COLS]
+  } else {
+    PeakTable <- UHSTable[Tn == Tn_PGA,.(PGA=Sa,PGV=NA,Vs30=Vref),by=.(lat,lon,depth,p,TR)]
+  }
 
-  COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(PGATable)]
-  UHSTable <- PGATable[UHSTable, on = COLS]
-  # PGV_table <- UHSTable[Tn == -1, .(PGVref = Sa), by = .(p, TR)] |> unique()
+
+  COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(PeakTable)]
+  UHSTable <- PeakTable[UHSTable, on = COLS]
+
+  if(!is.null(Tn_PGV)){
+    # Remove Tn==-1
+    UHSTable <- UHSTable[Tn!=Tn_PGV]
+  }
 
   # ********************************************************************* ----
   # Get AF*Sa for AEP ordinates
 
-
+  AFTRmodel <- data.table()
   if(Vref %in% c(760,3000) &  !is.null(Vs30)){
-    AFTRmodel <- data.table()
+
     message(sprintf("> Fit Site Response model (Stewart2017) for ASCE site classes..."))
 
     for (Vs in Vs30) {
@@ -124,28 +150,15 @@ buildGMDP <- function(path, IDo="00000000",engine="openquake",Vs30=NULL,Vref) {
     # browser()
     AUX <- AFTRmodel[,.(lat,lon,depth,p,TR,Tn,AF,SID,SM)]
     COLS <- colnames(AUX)[colnames(AUX) %in% colnames(UHSTable)]
-    UHSTable <- AFTRmodel[UHSTable, on = COLS][,.(lat,lon,depth,p,TR,Tn,IT,POE,AEP,Sa=Sa*AF,ID=IDo,Vref=Vref,Vs30=Vs,AF,SID,SM,PGA_Unit="g",Sa_Unit="g",TR_Unit="yr",Vs30_Unit="m/s",Vref_Unit="m/s")]
+    UHSTable <- AFTRmodel[UHSTable, on = COLS][,.(lat,lon,depth,p,TR,Tn,IT,POE,AEP,Sa=Sa*AF,PGA=PGA*AF,PGV=PGV*AF,ID=IDo,Vref=Vref,Vs30=Vs,AF,SID,SM,PGA_Unit="g",Sa_Unit="g",TR_Unit="yr",Vs30_Unit="m/s",Vref_Unit="m/s")]
     AFTRmodel <- unique(AFTRmodel, by = c("lat","lon","depth","Tn", "p", "TR", "Vs30", "Vref", "SID", "SM"))
 
   } else {
 
-    UHSTable <- UHSTable[,.(lat,lon,depth,p,TR,Tn,IT,POE,AEP,Sa,ID=IDo,Vref=Vref,Vs30=Vref,AF=1,SID="",SM="openquake",PGA_Unit="g",Sa_Unit="g",TR_Unit="yr",Vs30_Unit="m/s",Vref_Unit="m/s")]
+    UHSTable <- UHSTable[,.(lat,lon,depth,p,TR,Tn,IT,POE,AEP,Sa,PGA,PGV,ID=IDo,Vref=Vref,Vs30=Vref,AF=1,SID="",SM="openquake",PGA_Unit="g",Sa_Unit="g",TR_Unit="yr",Vs30_Unit="m/s",Vref_Unit="m/s")]
 
   }
 
   # ********************************************************************* ----
-  # PGV, Arias Intensity
-
-  # Remove Tn==-1 from AEP Table
-  # Build PGV_Table
-  # Add PGV Table to UHSTable?
-  # Build Arias Intensity Table
-
-
-
-
-
-
-  # ********************************************************************* ----
-  return(list(AEPTable = AEPTable, UHSTable = UHSTable, AFTRmodel = AFTRmodel, SaTRmodel = SaTRmodel, RMwTable = RMwTable, PGATable = PGATable))
+  return(list(AEPTable = AEPTable, UHSTable = UHSTable, AFTRmodel = AFTRmodel, SaTRmodel = SaTRmodel, RMwTable = RMwTable, PeakTable = PeakTable))
 }

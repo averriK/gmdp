@@ -82,13 +82,13 @@ importModel.oqAEP <- function(path) {
       stop("Internal error: Unknown Tn:\n %s",paste(HEADER,sep=""))
     }
 
-    DATA <- DATA[,.(lat,lon,depth,ITo=ITo,Tn = Tn, p = p, Sa = Sa, POE = POE,AEP = -log(1 - POE) / ITo,TR=-ITo/log(1-POE))][TR != Inf & AEP != Inf & AEP != 0]
+    DATA <- DATA[,.(lat,lon,depth,ITo=ITo,Tn = Tn, p = p, Sa = Sa, POE = POE,AEP = -log(1 - POE) / ITo,TR=-ITo/log(1-POE))]
 
 
     DT <- data.table::rbindlist(list(DATA, DT))
   }
-
-
+  # browser()
+  DT <- DT[TR != Inf & AEP != Inf & AEP != 0 & Sa!=1000]
    return(DT[])
 }
 

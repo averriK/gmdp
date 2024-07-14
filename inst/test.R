@@ -6,7 +6,7 @@ GMDP <- buildGMDP(Vref=250,path="/Users/averri/Database/openquake/output/ARMV4D/
 
 
 
-# Example #2
+# Example #2. No PGV data
 devtools::load_all()
 GMDP <- buildGMDP(Vref=760,Vs30=c(450,290),path="/Users/averri/Database/openquake/output/ARMV4D/test760/",IDo="ARM4V4D")
 
