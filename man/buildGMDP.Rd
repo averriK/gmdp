@@ -4,27 +4,20 @@
 \alias{buildGMDP}
 \title{Title}
 \usage{
-buildGMDP(
-  path,
-  IDo = "00000000",
-  ITo,
-  Vref = 760,
-  engine = "openquake",
-  Vs30_STEP = 25
-)
+buildGMDP(path, IDo = "00000000", engine = "openquake", Vs30 = NULL, Vref)
 }
 \arguments{
-\item{path}{Path to GMDP}
+\item{path}{character}
 
-\item{IDo}{Output IDo}
+\item{IDo}{character Output IDo}
 
-\item{ITo}{Invesigation Time. ITo=50 yr}
+\item{engine}{character c("openquake","user")}
+
+\item{Vs30}{numeric Vs30 Step}
 
 \item{Vref}{Vs30 in m/s}
 
-\item{engine}{c("openquake","user")}
-
-\item{Vs30_STEP}{Vs30 Step}
+\item{siteResponse}{boolean}
 }
 \value{
 list
