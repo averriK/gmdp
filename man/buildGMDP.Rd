@@ -4,7 +4,7 @@
 \alias{buildGMDP}
 \title{Title}
 \usage{
-buildGMDP(path, IDo = "00000000", engine = "openquake", Vs30 = NULL, Vref)
+buildGMDP(path, IDo = "00000000", engine = "openquake", vs30 = NULL, vref)
 }
 \arguments{
 \item{path}{character}
@@ -13,9 +13,9 @@ buildGMDP(path, IDo = "00000000", engine = "openquake", Vs30 = NULL, Vref)
 
 \item{engine}{character c("openquake","user")}
 
-\item{Vs30}{numeric Vs30 Step}
+\item{vs30}{numeric Vs30 Step}
 
-\item{Vref}{Vs30 in m/s}
+\item{vref}{Vs30 in m/s}
 
 \item{siteResponse}{boolean}
 }

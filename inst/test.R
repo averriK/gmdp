@@ -1,15 +1,18 @@
 # Example #1
 # GMDP <- buildGMDP(path="~/Database/gmdp/output/classical/BC/ARMA611",IDo="ARMA619",Vref=760,Vs30_STEP=10,ITo=1)
 devtools::load_all()
-GMDP <- buildGMDP(Vref=250,path="/Users/averri/Database/openquake/output/ARMV4D/gem250/",IDo="ARM4V4D")
+GMDP <- buildGMDP(vref=250,path="inst/250/",IDo="ARM4V4D")
 
 
 
 
 # Example #2. No PGV data
 devtools::load_all()
-GMDP <- buildGMDP(Vref=760,Vs30=c(450,290),path="/Users/averri/Database/openquake/output/ARMV4D/test760/",IDo="ARM4V4D")
+GMDP <- buildGMDP(vref=760,vs30=c(450,290),path="inst/760/",IDo="ARM4V4D")
 
+# Example #2. No PGV data
+devtools::load_all()
+GMDP <- buildGMDP(vref=3000,vs30=c(450,290),path="inst/3000/",IDo="ARM4V4D")
 # Example #3
 S1 <- seq(SIDtoVs30("E"), SIDtoVs30("A"), by = Vs30_STEP)
 S2 <- sapply(c("B","BC", "C", "CD", "D", "DE", "E"), SIDtoVs30) |> unname()

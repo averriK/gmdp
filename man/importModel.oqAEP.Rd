@@ -4,10 +4,12 @@
 \alias{importModel.oqAEP}
 \title{Import Annual Exceedance Probabiliies (AEP) from openquake zip files.}
 \usage{
-importModel.oqAEP(path)
+importModel.oqAEP(path, vref)
 }
 \arguments{
 \item{path}{character. Path to the folder containing the hazard and quantile curves}
+
+\item{vref}{numeric. Reference Vs30 in m/s}
 }
 \value{
 A data.table with the following columns:

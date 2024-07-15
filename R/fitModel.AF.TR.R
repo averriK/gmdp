@@ -4,8 +4,8 @@
 #' @param .x GMDP object
 #' @param q Double. quantile
 #' @param Tn Double. Natural Period
-#' @param Vs30 Double. Vs30 in m/s
-#' @param Vref Double. Reference Vs30 in m/s
+#' @param vs30 Double. Vs30 in m/s
+#' @param vref Double. Reference Vs30 in m/s
 #' @param Vl Double. Lower limit Vs30 in m/s
 #' @param Vu Double. Upper limit Vs30 in m/s
 #'
@@ -20,7 +20,7 @@
 #' @examples
 #'
 
-fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
+fitModel.AF.TR <- function(.x,q=0.50,Tn, vs30, vref, Vl = 200, Vu = 2000) {
 
   on.exit(expr = {
     rm(list = ls())
@@ -28,15 +28,15 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
 
 
 
-  OK <- length(Vref) == 1 & length(Vs30) == 1
-  # OK <- OK & (Vref %in% c(3000, 760))
+  OK <- length(vref) == 1 & length(vs30) == 1
+  # OK <- OK & (vref %in% c(3000, 760))
   stopifnot(OK)
-  if (Vs30 == Vref) {
+  if (vs30 == vref) {
     DT <- data.table::data.table(
       .x,
-      Vref = Vref,
-      Vs30 = Vref,
-      SID = Vs30toSID(Vs30),
+      Vref = vref,
+      Vs30 = vref,
+      SID = Vs30toSID(vref),
       muLnPGA = 0,
       muL = 0,
       muI = 0,
@@ -142,77 +142,77 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
 
   # Mean Value ----
   muLnPGA <- log(PGA)
-  if (Vref == 760) {
+  if (vref == 760) {
     C7603000 <- 2.275
   }
-  if (Vref == 3000) {
+  if (vref == 3000) {
     C7603000 <- 1.0
   }
 
-  if (Vs30 <= V1I(Tn)) {
+  if (vs30 <= V1I(Tn)) {
     muL <- cI(Tn) * log(V1I(Tn) / 760)
   }
 
-  if (V1I(Tn) < Vs30 & Vs30 <= V2I(Tn)) {
-    muL <- cI(Tn) * log(Vs30 / 760)
+  if (V1I(Tn) < vs30 & vs30 <= V2I(Tn)) {
+    muL <- cI(Tn) * log(vs30 / 760)
   }
 
-  if (Vs30 > V2I(Tn)) {
-    muL <- cI(Tn) * log(V2I(Tn) / 760) + cI(Tn) / 2 * log(Vs30 / V2I(Tn))
+  if (vs30 > V2I(Tn)) {
+    muL <- cI(Tn) * log(V2I(Tn) / 760) + cI(Tn) / 2 * log(vs30 / V2I(Tn))
   }
 
-  a <- f4I(Tn) * (exp(f5I(Tn) * (min(Vs30, 3000) - 360)) - exp(f5I(Tn) * (3000 - 360)))
+  a <- f4I(Tn) * (exp(f5I(Tn) * (min(vs30, 3000) - 360)) - exp(f5I(Tn) * (3000 - 360)))
 
   b <- C7603000 * f3I(Tn)
 
-  if (Vs30 < VcI(Tn)) {
+  if (vs30 < VcI(Tn)) {
     muNL <- a * log((exp(muLnPGA) / b + 1))
   }
-  if (Vs30 >= VcI(Tn)) {
+  if (vs30 >= VcI(Tn)) {
     muNL <- 0
   }
 
-  if (Vref == 3000) {
+  if (vref == 3000) {
     muI <- F760I(Tn)
   }
-  if (Vref == 760) {
+  if (vref == 760) {
     muI <- 0
   }
 
   muLnAF <- muL + muI + muNL
 
   # Standard Deviation ----
-  if (Vs30 <= VfI(Tn)) {
-    sdL <- sdLI(Tn) - 2 * (sdLI(Tn) - sdVcI(Tn)) * (Vs30 - Vl) / (VfI(Tn) - Vl) + (sdLI(Tn) - sdVcI(Tn)) * (Vs30 - Vl)^2 / (VfI(Tn) - Vl)^2
+  if (vs30 <= VfI(Tn)) {
+    sdL <- sdLI(Tn) - 2 * (sdLI(Tn) - sdVcI(Tn)) * (vs30 - Vl) / (VfI(Tn) - Vl) + (sdLI(Tn) - sdVcI(Tn)) * (vs30 - Vl)^2 / (VfI(Tn) - Vl)^2
   }
 
-  if (VfI(Tn) < Vs30 & Vs30 <= V2I(Tn)) {
+  if (VfI(Tn) < vs30 & vs30 <= V2I(Tn)) {
     sdL <- sdVcI(Tn)
   }
-  if (Vs30 > V2I(Tn)) {
-    sdL <- sdVcI(Tn) + (sdUI(Tn) - sdVcI(Tn)) * (Vs30 - V2I(Tn))^2 / (Vu - V2I(Tn))^2
+  if (vs30 > V2I(Tn)) {
+    sdL <- sdVcI(Tn) + (sdUI(Tn) - sdVcI(Tn)) * (vs30 - V2I(Tn))^2 / (Vu - V2I(Tn))^2
   }
 
-  if (Vs30 < 300) {
+  if (vs30 < 300) {
     sdNL <- sdcI(Tn)
   }
 
-  if (300 <= Vs30 & Vs30 < 1000) {
-    sdNL <- -sdcI(Tn) * log(Vs30 / 300) / log(1000 / 300) + sdcI(Tn)
+  if (300 <= vs30 & vs30 < 1000) {
+    sdNL <- -sdcI(Tn) * log(vs30 / 300) / log(1000 / 300) + sdcI(Tn)
   }
 
-  if (Vs30 >= 1000) {
+  if (vs30 >= 1000) {
     sdNL <- 0
   }
 
 
-  if (Vref == 3000) {
+  if (vref == 3000) {
     sdI <- sd760I(Tn)
   }
-  if (Vref == 760) {
+  if (vref == 760) {
     sdI <- 0
   }
-  a <- f4I(Tn) * (exp(f5I(Tn) * (min(Vs30, 3000) - 360)) - exp(f5I(Tn) * (3000 - 360)))
+  a <- f4I(Tn) * (exp(f5I(Tn) * (min(vs30, 3000) - 360)) - exp(f5I(Tn) * (3000 - 360)))
 
   b <- C7603000 * f3I(Tn)
   sdLnAF <- sqrt(sdL^2 + sdI^2 + sdNL^2)
@@ -224,9 +224,9 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
   }
   DT <- data.table::data.table(
     .x,
-    Vref = Vref,
-    Vs30 = Vs30,
-    SID = Vs30toSID(Vs30),
+    Vref = vref,
+    Vs30 = vs30,
+    SID = Vs30toSID(vs30),
     muLnPGA = muLnPGA,
     muL = muL,
     muI = muI,

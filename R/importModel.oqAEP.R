@@ -2,6 +2,7 @@
 #' Import Annual Exceedance Probabiliies (AEP) from openquake zip files.
 #'
 #' @param path character. Path to the folder containing the hazard and quantile curves
+#' @param vref numeric. Reference Vs30 in m/s
 #'
 #' @return A data.table with the following columns:
 #' @export importModel.oqAEP
@@ -11,7 +12,7 @@
 #' @importFrom stringr str_remove
 #' @importFrom stringr str_split
 #'
-importModel.oqAEP <- function(path) {
+importModel.oqAEP <- function(path,vref) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)
@@ -82,7 +83,7 @@ importModel.oqAEP <- function(path) {
       stop("Internal error: Unknown Tn:\n %s",paste(HEADER,sep=""))
     }
 
-    DATA <- DATA[,.(lat,lon,depth,ITo=ITo,Tn = Tn, p = p, Sa = Sa, POE = POE,AEP = -log(1 - POE) / ITo,TR=-ITo/log(1-POE))]
+    DATA <- DATA[,.(Vref=vref,lat,lon,depth,ITo=ITo,Tn = Tn, p = p, Sa = Sa, POE = POE,AEP = -log(1 - POE) / ITo,TR=-ITo/log(1-POE))]
 
 
     DT <- data.table::rbindlist(list(DATA, DT))

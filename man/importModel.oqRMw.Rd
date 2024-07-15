@@ -4,12 +4,14 @@
 \alias{importModel.oqRMw}
 \title{Import disaggregation hazard (R-MW-p) from openquake}
 \usage{
-importModel.oqRMw(path, ITo)
+importModel.oqRMw(path, ITo, vref)
 }
 \arguments{
 \item{path}{Path to the folder containing the hazard and quantile curves}
 
 \item{ITo}{Numeric. Investigation Time}
+
+\item{vref}{Numeric. Reference Vs30 in m/s}
 }
 \value{
 A data.table with the following columns:

@@ -3,6 +3,7 @@
 #'
 #' @param path Path to the folder containing the hazard and quantile curves
 #' @param ITo Numeric. Investigation Time
+#' @param vref Numeric. Reference Vs30 in m/s
 #'
 #' @return A data.table with the following columns:
 #' @export importModel.oqRMw
@@ -16,7 +17,7 @@
 #'
 #' @examples
 #'
-importModel.oqRMw <- function(path, ITo) {
+importModel.oqRMw <- function(path, ITo,vref) {
   on.exit(expr = {
     rm(list = ls())
   }, add = TRUE)

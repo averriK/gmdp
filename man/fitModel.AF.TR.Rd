@@ -4,7 +4,7 @@
 \alias{fitModel.AF.TR}
 \title{Amplification Factor AF, from Stewart Et Al. 2016}
 \usage{
-fitModel.AF.TR(.x, q = 0.5, Tn, Vs30, Vref, Vl = 200, Vu = 2000)
+fitModel.AF.TR(.x, q = 0.5, Tn, vs30, vref, Vl = 200, Vu = 2000)
 }
 \arguments{
 \item{.x}{GMDP object}
@@ -13,9 +13,9 @@ fitModel.AF.TR(.x, q = 0.5, Tn, Vs30, Vref, Vl = 200, Vu = 2000)
 
 \item{Tn}{Double. Natural Period}
 
-\item{Vs30}{Double. Vs30 in m/s}
+\item{vs30}{Double. Vs30 in m/s}
 
-\item{Vref}{Double. Reference Vs30 in m/s}
+\item{vref}{Double. Reference Vs30 in m/s}
 
 \item{Vl}{Double. Lower limit Vs30 in m/s}
 
