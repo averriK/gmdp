@@ -35,7 +35,7 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
     DT <- data.table::data.table(
       .x,
       Vref = Vref,
-      Vs30 = Vs30,
+      Vs30 = Vref,
       SID = Vs30toSID(Vs30),
       muLnPGA = 0,
       muL = 0,
@@ -47,7 +47,7 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, Vs30, Vref, Vl = 200, Vu = 2000) {
       sdI = 0,
       sdNL = 0,
       sdLnAF = 0,
-      SM = "aep"
+      SM = "openquake"
     )
     return(DT)
   }
