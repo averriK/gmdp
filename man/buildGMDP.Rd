@@ -16,8 +16,6 @@ buildGMDP(path, IDo = "00000000", engine = "openquake", vs30 = NULL, vref)
 \item{vs30}{numeric Vs30 Step}
 
 \item{vref}{Vs30 in m/s}
-
-\item{siteResponse}{boolean}
 }
 \value{
 list

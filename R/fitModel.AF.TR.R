@@ -1,7 +1,7 @@
 
 #' Amplification Factor AF, from Stewart Et Al. 2016
 #'
-#' @param .x GMDP object
+#' @param pga Double. PGA in g
 #' @param q Double. quantile
 #' @param Tn Double. Natural Period
 #' @param vs30 Double. Vs30 in m/s
@@ -20,20 +20,18 @@
 #' @examples
 #'
 
-fitModel.AF.TR <- function(.x,q=0.50,Tn, vs30, vref, Vl = 200, Vu = 2000) {
+fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
 
-  on.exit(expr = {
-    rm(list = ls())
-  }, add = TRUE)
-
-
+  on.exit(expr = {    rm(list = ls())  }, add = TRUE)
 
   OK <- length(vref) == 1 & length(vs30) == 1
-  # OK <- OK & (vref %in% c(3000, 760))
+  OK <- OK & (vref %in% c(3000, 760))
   stopifnot(OK)
+
+
   if (vs30 == vref) {
     DT <- data.table::data.table(
-      .x,
+      PGA=pga,
       Vref = vref,
       Vs30 = vref,
       SID = Vs30toSID(vref),
@@ -51,8 +49,8 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, vs30, vref, Vl = 200, Vu = 2000) {
     )
     return(DT)
   }
-  PGA <- .x$PGA[1]
 
+  PGA <- pga
   # Interpolated tables ----
   cI <- stats::approxfun(
     x = c(0.00, 0.08, 0.10, 0.20, 0.30, 0.40, 0.50, 0.80, 1.00, 2.00, 3.00, 4.00, 5.00, 20.00),
@@ -223,7 +221,7 @@ fitModel.AF.TR <- function(.x,q=0.50,Tn, vs30, vref, Vl = 200, Vu = 2000) {
     beta <- exp(1/2*sdLnAF^2)
   }
   DT <- data.table::data.table(
-    .x,
+    PGA = pga,
     Vref = vref,
     Vs30 = vs30,
     SID = Vs30toSID(vs30),

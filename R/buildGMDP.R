@@ -6,7 +6,6 @@
 #' @param vs30 numeric Vs30 Step
 #' @param vref Vs30 in m/s
 #' @param engine character c("openquake","user")
-#' @param siteResponse boolean
 #'
 #' @return list
 #' @export
@@ -18,10 +17,8 @@ buildGMDP <- function(path, IDo="00000000",engine="openquake",vs30=NULL,vref) {
 on.exit(expr = {rm(list = ls())}, add = TRUE)
   . <- NULL
 
-  # ********************************************************************* ----
-  # Build AEPTable
-  # THIS VERSION DO NOT REQUIRES THE INVESTIGATION TIME AS INPUT.
-  # RUNNING AS A BATCH PROCESS, ITo CAN BE OBTAINED FROM HEADERS
+  # *********************************************************************
+  # Build AEPTable ----
 
   message(sprintf("> Build AEP Table..."))
   AEPTable <- NULL
@@ -49,8 +46,8 @@ on.exit(expr = {rm(list = ls())}, add = TRUE)
     AEPTable <- importModel.userAEP(path,filename= "AEP.xlsx")
   }
   ITo <- unique(AEPTable$ITo)[1]
-  # ********************************************************************* ----
-  # Disaggregation
+  # *********************************************************************
+  # Build Disaggregation Table ----
 
   RMwTable <- NULL
   message(sprintf("> Building Disagregation Hazard Table..."))
@@ -71,35 +68,16 @@ on.exit(expr = {rm(list = ls())}, add = TRUE)
     message(sprintf("> Disaggregation data not available."))
   }
 
-#
 
-
-
-  # ********************************************************************* ----
-  # Build SaTR model
+  # *********************************************************************
+  # Build SaTR model ----
   message(sprintf("> Fit AEP  modelfrom %s...", path))
   Tn_PGA <- AEPTable[Tn>=0]$Tn |> min()
-  # browser()
-  Tn_PGV <- NULL
-  if(nrow(AEPTable[Tn<0])>0){
-    # Exclude PGV case
-    Tn_PGV <- AEPTable[Tn<0]$Tn |> min()
-    SaTRmodel <- AEPTable[Tn!=Tn_PGV, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("lat","lon","depth","Tn", "p")][, .(lat,lon,depth,Tn, p, a, b, c, sdLnA)]
-
-    # Include PGV case. Assume same AF than PGA case
-    SaTRmodel <- rbind(SaTRmodel,SaTRmodel[Tn==Tn_PGA][,Tn:=Tn_PGV])
-  } else {
-    SaTRmodel <- AEPTable[, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("lat","lon","depth","Tn", "p")][, .(lat,lon,depth,Tn, p, a, b, c, sdLnA)]
-  }
+  SaTRmodel <- AEPTable[, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("lat","lon","depth","Tn", "p")][, .(lat,lon,depth,Tn, p, a, b, c, sdLnA,Sa_Unit="g")]
 
 
-
-
-
-
-
-  # ********************************************************************* ----
-  # Get UHS ordinates
+  # *********************************************************************
+  # Get UHS ordinates ----
   message(sprintf("> Set UHS spectral ordinates..."))
  # Build UHSTable
   S1 <- seq(100,10000,by=25)
@@ -108,56 +86,58 @@ on.exit(expr = {rm(list = ls())}, add = TRUE)
 
   UHSTable <- SaTRmodel[, .(IT = ITo, POE = ITo * 1 / TRo, TR = TRo, Sa = exp(a + b * log(TRo) + c * 1 / TRo), AEP = 1 / TRo), by = .(lat,lon,depth,Tn, p)]
 # no NAs
-  # ********************************************************************* ----
-  # Get PGA at vref
-  if(!is.null(Tn_PGV)){
-    AUX1 <- UHSTable[Tn == Tn_PGA,.(PGA=Sa),by=.(lat,lon,depth,p,TR)]
-    AUX2 <- UHSTable[Tn == Tn_PGV,.(PGV=Sa),by=.(lat,lon,depth,p,TR)]
-    COLS <- colnames(AUX1)[colnames(AUX1) %in% colnames(AUX2)]
-    PeakTable <- AUX1[AUX2,on=COLS]
-  } else {
-    PeakTable <- UHSTable[Tn == Tn_PGA,.(PGA=Sa,PGV=NA,Vref=vref),by=.(lat,lon,depth,p,TR)]
-  }
 
 
+  # *********************************************************************
+  # Get PGA at vref ----
+  PeakTable <- UHSTable[Tn == Tn_PGA,.(PGA=Sa),by=.(lat,lon,depth,p,TR)]
   COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(PeakTable)]
   UHSTable <- PeakTable[UHSTable, on = COLS]
+  PeakTable <- AEPTable[Tn==Tn_PGA,.(PGA=Sa),by=.(p,Sa)] |> unique()
+  COLS <- colnames(AEPTable)[colnames(AEPTable) %in% colnames(PeakTable)]
+  AEPTable <- PeakTable[AEPTable, on = COLS]
 
-  if(!is.null(Tn_PGV)){
-    # Remove Tn==-1
-    UHSTable <- UHSTable[Tn!=Tn_PGV]
-  }
-
-  # ********************************************************************* ----
-  # Get AF*Sa for AEP ordinates
-
-  AFTRmodel <- data.table()
-  if(vref %in% c(760,3000) &  !is.null(vs30)){
-
-    message(sprintf("> Fit Site Response model (Stewart2017) for ASCE site classes..."))
-    Vs30_TARGET <- vs30[vs30!=vref]
-
-    for (Vs in Vs30_TARGET) {
-      message(sprintf("> Building AEP Site Response model for Vs30 %4.1f m/s...", Vs))
+  # *********************************************************************
+  # Get AF*Sa for UHS ordinates  ----
+  AFmodel_UHS <- data.table()
+  AFmodel_AEP <- data.table()
+  if(!is.null(vs30) & vref %in% c(760,3000)){
+    for (Vs in vs30) {
       # AF estimated only as mean value. Ignoring quantiles from Sa(Tn). Setting p=0.50
-      # Each (p, Tn) set results in a data.table .x with TR rows
-
-      AUX <- UHSTable[, fitModel.AF.TR(.x=.SD,q=0.50,Tn=Tn, vs30 = Vs,vref=vref), by = .(lat,lon,depth,p,Tn)]
-      AFTRmodel <- data.table::rbindlist(list(AFTRmodel, AUX), use.names = TRUE)
+      # by = .(p,lat,lon,depth,Tn) set results in a data.table .x with TR rows
+      message(sprintf("> Fit UHS Site Response model (Stewart2017) for target Vs30 %4.1f m/s...", Vs))
+      AUX <- UHSTable[, fitModel.AF.TR(.x=.SD,pga=PGA,q=0.50,Tn=Tn, vs30 = Vs,vref=vref), by = .(p,lat,lon,depth,Tn)]
+      AFmodel_UHS <- data.table::rbindlist(list(AFmodel_UHS, AUX), use.names = TRUE)
+      message(sprintf("> Fit AEP Site Response model (Stewart2017) for target Vs30 %4.1f m/s...", Vs))
+      AUX <- AEPTable[, fitModel.AF.TR(.x=.SD,pga=PGA,q=0.50,Tn=Tn, vs30 = Vs,vref=vref), by = .(p,lat,lon,depth,Tn)]
+      AFmodel_AEP <- data.table::rbindlist(list(AFmodel_AEP, AUX), use.names = TRUE)
     }
     # update UHSTable
     message(sprintf("> Update UHSTable ..."))
-    AUX <- AFTRmodel[,.(lat,lon,depth,p,TR,Tn,AF,SID,SM=SM,Vs30,Vref)]
+    AUX <- AFmodel_UHS[,.(Vref,Vs30,lat,lon,depth,p,Tn,AF,SID,SM,PGA,sdLnAF)] |> unique()
     COLS <- colnames(AUX)[colnames(AUX) %in% colnames(UHSTable)]
-    UHSTable <- AFTRmodel[UHSTable, on = COLS][,.(lat,lon,depth,p,TR,Tn,IT,POE,AEP,Sa=Sa*AF,PGA=PGA*AF,PGV=PGV*AF,ID=IDo,Vref=vref,Vs30=Vs,AF,SID,SM,PGA_Unit="g",Sa_Unit="g",TR_Unit="yr",Vs30_Unit="m/s",Vref_Unit="m/s")]
-    AFTRmodel <- unique(AFTRmodel, by = c("lat","lon","depth","Tn", "p", "TR", "Vs30", "Vref", "SID", "SM"))
-    PeakTable <- UHSTable[,.(ID=IDo,lat,lon,depth,p,TR,PGA,PGV,Vs30=Vs,Vref=vref)] |> unique()
-  } else {
+    AFmodel_UHS <- unique(AFmodel_UHS, by = c("lat","lon","depth","Tn", "p", "Vs30", "Vref", "SID", "SM"))
+    UHSTable <- AUX[UHSTable, on = COLS][,`:=`(Sa=AF*Sa,PGA=AF*PGA)] |> unique()
 
-    UHSTable <- UHSTable[,.(lat,lon,depth,p,TR,Tn,IT,POE,AEP,Sa,PGA,PGV,ID=IDo,Vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake",PGA_Unit="g",Sa_Unit="g",TR_Unit="yr",Vs30_Unit="m/s",Vref_Unit="m/s")]
-    PeakTable <- UHSTable[,.(ID=IDo,lat,lon,depth,p,TR,PGA,PGV,Vs30=vref,Vref=vref)] |> unique()
+    # update AEPTable
+    message(sprintf("> Update AEPTable ..."))
+    AUX <- AFmodel_AEP[,.(Vref,Vs30,lat,lon,depth,p,Tn,AF,SID,SM,PGA,sdLnAF)] |> unique()
+    COLS <- colnames(AUX)[colnames(AUX) %in% colnames(AEPTable)]
+    AFmodel_AEP <- unique(AFmodel_AEP, by = c("lat","lon","depth","Tn", "p", "Vs30", "Vref", "SID", "SM"))
+    AEPTable <- AUX[AEPTable, on = COLS][,`:=`(Sa=AF*Sa,PGA=AF*PGA)] |> unique()
+
+
+  }
+  browser()
+  if(!is.null(vs30) & !(vref %in% c(760,3000)) ){
+    stop("Error: You are trying to obtain spectral ordinates from an openquake model with vref=%4.1f to a target vs30=%4.1f but amplification factors AF are available for vref = 760 and vref=3000 m/s. ",vref,vs30)
   }
 
-  # ********************************************************************* ----
-  return(list(AEPTable = AEPTable, UHSTable = UHSTable, AFTRmodel = AFTRmodel, SaTRmodel = SaTRmodel, RMwTable = RMwTable, PeakTable = PeakTable))
+  if(is.null(vs30)){ #default case
+    UHSTable <- data.table(UHSTable,vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake")
+    AEPTable <- data.table(AEPTable,vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake")
+
+  }
+
+  return(list(AEPTable = AEPTable, UHSTable = UHSTable, AFmodel_AEP=AFmodel_AEP,AFmodel_UHS=AFmodel_UHS,SaTRmodel = SaTRmodel, RMwTable = RMwTable))
 }
