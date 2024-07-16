@@ -1,7 +1,7 @@
 # Example #1
 # GMDP <- buildGMDP(path="~/Database/gmdp/output/classical/BC/ARMA611",IDo="ARMA619",Vref=760,Vs30_STEP=10,ITo=1)
 devtools::load_all()
-GMDP <- buildGMDP(vref=250,path="inst/250/",IDo="ARM4V4D")
+GMDP <- buildGMDP(vref=760,path="inst/760/",IDo="ARM4V4D")
 
 
 # Example #2. No PGV data

@@ -128,14 +128,14 @@ on.exit(expr = {rm(list = ls())}, add = TRUE)
 
 
   }
-  browser()
+
   if(!is.null(vs30) & !(vref %in% c(760,3000)) ){
     stop("Error: You are trying to obtain spectral ordinates from an openquake model with vref=%4.1f to a target vs30=%4.1f but amplification factors AF are available for vref = 760 and vref=3000 m/s. ",vref,vs30)
   }
 
   if(is.null(vs30)){ #default case
-    UHSTable <- data.table(UHSTable,vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake")
-    AEPTable <- data.table(AEPTable,vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake")
+    UHSTable <- data.table(UHSTable,Vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake",sdLnAF=0)
+    AEPTable <- data.table(AEPTable,Vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake",sdLnAF=0)
 
   }
 

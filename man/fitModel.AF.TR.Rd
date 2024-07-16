@@ -4,18 +4,20 @@
 \alias{fitModel.AF.TR}
 \title{Amplification Factor AF, from Stewart Et Al. 2016}
 \usage{
-fitModel.AF.TR(.x, q = 0.5, Tn, vs30, vref, Vl = 200, Vu = 2000)
+fitModel.AF.TR(.x, pga, Tn, vs30, vref, q = 0.5, Vl = 200, Vu = 2000)
 }
 \arguments{
-\item{.x}{GMDP object}
+\item{.x}{data.table. Input data.table}
 
-\item{q}{Double. quantile}
+\item{pga}{Double. PGA in g}
 
 \item{Tn}{Double. Natural Period}
 
 \item{vs30}{Double. Vs30 in m/s}
 
 \item{vref}{Double. Reference Vs30 in m/s}
+
+\item{q}{Double. quantile}
 
 \item{Vl}{Double. Lower limit Vs30 in m/s}
 

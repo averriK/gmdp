@@ -1,6 +1,7 @@
 
 #' Amplification Factor AF, from Stewart Et Al. 2016
 #'
+#' @param .x data.table. Input data.table
 #' @param pga Double. PGA in g
 #' @param q Double. quantile
 #' @param Tn Double. Natural Period
