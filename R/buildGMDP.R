@@ -10,6 +10,8 @@
 #' @return list
 #' @export
 #' @import data.table
+#' @import dsra
+
 #'
 #' @examples
 #'
@@ -106,10 +108,10 @@ on.exit(expr = {rm(list = ls())}, add = TRUE)
       # AF estimated only as mean value. Ignoring quantiles from Sa(Tn). Setting p=0.50
       # by = .(p,lat,lon,depth,Tn) set results in a data.table .x with TR rows
       message(sprintf("> Fit UHS Site Response model (Stewart2017) for target Vs30 %4.1f m/s...", Vs))
-      AUX <- UHSTable[, fitModel.AF.TR(.x=.SD,pga=PGA,q=AF_q_TARGET,Tn=Tn, vs30 = Vs,vref=vref), by = .(p,lat,lon,depth,Tn)]
+      AUX <- UHSTable[, dsra::fitModel.AF.TR(.x=.SD,pga=PGA,q=AF_q_TARGET,Tn=Tn, vs30 = Vs,vref=vref), by = .(p,lat,lon,depth,Tn)]
       AFmodel_UHS <- data.table::rbindlist(list(AFmodel_UHS, AUX), use.names = TRUE)
       message(sprintf("> Fit AEP Site Response model (Stewart2017) for target Vs30 %4.1f m/s...", Vs))
-      AUX <- AEPTable[, fitModel.AF.TR(.x=.SD,pga=PGA,q=AF_q_TARGET,Tn=Tn, vs30 = Vs,vref=vref), by = .(p,lat,lon,depth,Tn)]
+      AUX <- AEPTable[, dsra::fitModel.AF.TR(.x=.SD,pga=PGA,q=AF_q_TARGET,Tn=Tn, vs30 = Vs,vref=vref), by = .(p,lat,lon,depth,Tn)]
       AFmodel_AEP <- data.table::rbindlist(list(AFmodel_AEP, AUX), use.names = TRUE)
     }
     # update UHSTable

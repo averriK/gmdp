@@ -4,7 +4,7 @@
 \alias{fitModel.Kmax.TR}
 \title{Title}
 \usage{
-fitModel.Kmax.TR(a, b, e, PGA, Ts, n = 20)
+fitModel.Kmax.TR(a, b, e, pga, Ts, n = 20)
 }
 \arguments{
 \item{a}{numeric. a parameter}
@@ -13,7 +13,7 @@ fitModel.Kmax.TR(a, b, e, PGA, Ts, n = 20)
 
 \item{e}{numeric. e parameter}
 
-\item{PGA}{numeric. PGA value}
+\item{pga}{numeric. PGA value}
 
 \item{Ts}{numeric. Ts value}
 

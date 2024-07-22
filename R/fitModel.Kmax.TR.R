@@ -5,7 +5,7 @@
 #' @param a numeric. a parameter
 #' @param b numeric. b parameter
 #' @param e numeric. e parameter
-#' @param PGA numeric. PGA value
+#' @param pga numeric. PGA value
 #' @param Ts numeric. Ts value
 #'
 #' @return data.table
@@ -19,7 +19,7 @@
 #'
 
 
-fitModel.Kmax.TR <- function(a,b,e,PGA,Ts, n = 20) { # cm
+fitModel.Kmax.TR <- function(a,b,e,pga,Ts, n = 20) { # cm
 
   on.exit(expr = {
     rm(list = ls())
@@ -28,7 +28,7 @@ fitModel.Kmax.TR <- function(a,b,e,PGA,Ts, n = 20) { # cm
   a0 <- a#x$a
   b0 <- b#x$b
   e0 <- e#x$e
-  PGA <- PGA#x$PGA
+  PGA <- pga#x$PGA
   Ts <- Ts#x$Ts
   LnDmax <- a0^2 / 0.98 + e0 - b0
   LnDmin <- LnDmax - log(200)

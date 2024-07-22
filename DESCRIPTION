@@ -16,6 +16,8 @@ Imports:
     readxl,
     stats,   
     randomForest,
+    dsra,
+    rpart,
     utils
 Depends: 
     R (>= 4.0)
