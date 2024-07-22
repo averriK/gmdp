@@ -24,10 +24,11 @@ fitModel.Kmax.Ts <- function(.data,Tso,Dao,model="rf",OSF=0.3){
   on.exit(expr = {rm(list = ls())  }, add = TRUE)
 # stopifnot(length(Tso)==1&length(Dao)==1)
   stopifnot(model %in% c("nlm","rf"))
+  .newdata <- data.table::CJ(Tso=Tso,Dao=Dao)
 
   # Non-Linear interpolation. Mixed effects. Best
   if(model=="nlm"){
-    NEWDATA <- data.table(LnTs=log(Tso),LnTs2=log(Tso)^2,LnDa=log(Dao))
+    NEWDATA <- .newdata[,.(LnTs=log(Tso),LnTs2=log(Tso)^2,LnDa=log(Dao))]
     RFDATA <- .data[Ts>0 & Kh>0 & Da>0,.(LnKh=log(Kh),LnKmax=log(Kmax),LnTs=log(Ts),LnTs2=log(Ts)^2,LnDa=log(Da))]
 
 
@@ -42,7 +43,7 @@ fitModel.Kmax.Ts <- function(.data,Tso,Dao,model="rf",OSF=0.3){
 
   # Random Forest
   if(model=="rf"){
-    NEWDATA <- data.table(Ts=Tso,Da=Dao)
+    NEWDATA <- .newdata[,.(Ts=Tso,Da=Dao)]
     AUX <- .data[between(Da,(1-OSF)*min(Dao),(1+OSF)*max(Dao)) ]
     if(nrow(AUX>=100)){
       RFDATA <- AUX
