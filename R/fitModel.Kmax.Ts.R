@@ -4,7 +4,8 @@
 #' @param .data data.table
 #' @param Tso double
 #' @param Dao double
-#' @param model string c("lm","nlm","dt","rf")
+#' @param model string c("nlm","rf")
+#' @param OSF double
 #'
 #' @return
 #' @export fitModel.Kmax.Ts
@@ -19,56 +20,33 @@
 #'
 #' @examples
 #'
-fitModel.Kmax.Ts <- function(.data,Tso,Dao,model="rf"){
+fitModel.Kmax.Ts <- function(.data,Tso,Dao,model="rf",OSF=0.3){
   on.exit(expr = {rm(list = ls())  }, add = TRUE)
+# stopifnot(length(Tso)==1&length(Dao)==1)
 
-  # . <- NULL
-  # .newdata <- data.table(Ts=Tso,Da=Dao)
-  #
-  # .data <- .SD[,.(Kh,Ts,Da)]
 
-  # Linear interpolation
-  if(model=="lm"){
-    MODEL <- glm(Kh ~Td+Da,data=.data)
-    NEWDATA <- list(Ts=Tso,Da=Dao)
-    Kh <- predict(MODEL,newdata=NEWDATA)
-
-    MODEL <- glm(Kmax ~Ts+Da,data=.data)
-    Kmax <- predict(MODEL,newdata=NEWDATA)
-
-  }
   # Non-Linear interpolation. Mixed effects. Best
   if(model=="nlm"){
-    MODEL <- glm(Kh ~Ts+Da+Ts*Da,data=.data)
-    NEWDATA <- list(Ts=Tso,Da=Dao)
-    Kh <- predict(MODEL,newdata=NEWDATA) |> round(digits=2)
+    NEWDATA <- data.table(LnTs=log(Tso),LnTs2=log(Tso)^2,LnDa=log(Dao))
 
-    MODEL <- glm(Kmax ~Ts+Da+Ts*Da,data=.data)
-    Kmax <- predict(MODEL,newdata=NEWDATA) |> round(digits=4)
 
+    MODEL <- glm(LnKh ~LnTs+LnDa+LnTs2+LnTs*LnDa,data=.data[Ts>0 & Kh>0 & Da>0,.(LnKh=log(Kh),LnTs=log(Ts),LnTs2=log(Ts)^2,LnDa=log(Da))])
+    Kh <- predict(MODEL,newdata=NEWDATA) |> exp()  |> round(digits=1)
+
+    MODEL <- glm(LnKmax ~LnTs+LnDa+LnTs2+LnTs*LnDa,data=.data[Ts>0 & Kh>0 & Da>0,.(LnKmax=log(Kmax),LnTs=log(Ts),LnTs2=log(Ts)^2,LnDa=log(Da))])
+    Kmax <- predict(MODEL,newdata=NEWDATA) |> exp() |> round(digits=3)
   }
 
-  # Decision Trees
-  if(model=="dt"){
-    MODEL <- rpart(Kh ~Ts+Da,data=.data)
-    NEWDATA <- list(Ts=Tso,Da=Dao)
-    Kh <- predict(MODEL,newdata=NEWDATA) |> round(digits=2)
-
-    MODEL <- rpart(Kmax ~Ts+Da,data=.data)
-    Kmax <- predict(MODEL,newdata=NEWDATA) |> round(digits=4)
-
-  }
 
 
   # Random Forest
   if(model=="rf"){
-    # Reduce the dataset
-    MODEL <- randomForest(Kh ~Ts+Da,data=.data,importance=FALSE,proximity=FALSE)
-    NEWDATA <- list(Ts=Tso,Da=Dao)
-    Kh <- predict(MODEL,newdata=NEWDATA) |> round(digits=2)
+    NEWDATA <- data.table(Ts=Tso,Da=Dao)
+    MODEL <- randomForest(Kh ~Ts+Da,data=.data[between(Da,(1-OSF)*min(Dao),(1+OSF)*max(Dao)) ],importance=FALSE,proximity=FALSE)
+    Kh <- predict(MODEL,newdata=NEWDATA) |> round(digits=1)
 
-    MODEL <- randomForest(Kmax ~Ts+Da,data=.data,importance=FALSE,proximity=FALSE)
-    Kmax <- predict(MODEL,newdata=NEWDATA) |> round(digits=4)
+    MODEL <- randomForest(Kmax ~Ts+Da,data=.data[between(Da,(1-OSF)*min(Dao),(1+OSF)*max(Dao)) ],importance=FALSE,proximity=FALSE)
+    Kmax <- predict(MODEL,newdata=NEWDATA) |> round(digits=3)
   }
   DT <- data.table::data.table(Ts=Tso,Da=Dao,Kh=Kh,Kmax=Kmax)
   return(DT)

@@ -33,7 +33,7 @@ DnTable <-  UHS[,dsra::fitModel.Dn.TR(Sa=Sa,PGA=PGA,Tn=Tn,Mw = 6.5, xD = 1.3, ky
 devtools::load_all()
 DnTRmodel <- DnTable[, .(ID,SM,Tn, TR, p, Ts, Vs30, Vref, a, b, e, PGA)] |> unique()
 KhTRmodel <- DnTRmodel[, fitModel.Kmax.TR( a=a,b=b,e=e,pga=PGA,Ts=Ts, n = 100), by = .(ID,SM,Tn, TR, p,Vs30,Vref)]
-KmaxTable <- KhTRmodel[,fitModel.Kmax.Ts(.SD,Tso=0.77,Dao=5),by=.(TR,p,Vs30),.SDcols=colnames(KhTRmodel)]
+KmaxTable <- KhTRmodel[,fitModel.Kmax.Ts(.SD,Tso=0.6,Dao=5),by=.(TR,p,Vs30),.SDcols=colnames(KhTRmodel)]
 
 
 
