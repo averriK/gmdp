@@ -4,7 +4,7 @@
 \alias{fitModel.Kmax.Ts}
 \title{Title}
 \usage{
-fitModel.Kmax.Ts(.data, Tso, Dao, model = "rf")
+fitModel.Kmax.Ts(.data, Tso, Dao, model = "rf", OSF = 0.3)
 }
 \arguments{
 \item{.data}{data.table}
@@ -13,7 +13,9 @@ fitModel.Kmax.Ts(.data, Tso, Dao, model = "rf")
 
 \item{Dao}{double}
 
-\item{model}{string c("lm","nlm","dt","rf")}
+\item{model}{string c("nlm","rf")}
+
+\item{OSF}{double}
 }
 \description{
 Title
