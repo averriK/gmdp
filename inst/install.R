@@ -5,5 +5,5 @@ remove.packages("gmdp") |> suppressWarnings()
 # devtools::install()
 
 ## PUSH MAIN
-# remotes::install_github("averriK/gmdp")
+remotes::install_github("averriK/gmdp")
 
