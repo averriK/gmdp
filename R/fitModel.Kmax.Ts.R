@@ -25,7 +25,7 @@ fitModel.Kmax.Ts <- function(.data,Tso,Dao,model="rf",OSF=0.3){
 # stopifnot(length(Tso)==1&length(Dao)==1)
   stopifnot(model %in% c("nlm","rf"))
   .newdata <- data.table::CJ(Tso=Tso,Dao=Dao)
-
+  . <- NULL
   # Non-Linear interpolation. Mixed effects. Best
   if(model=="nlm"){
     NEWDATA <- .newdata[,.(LnTs=log(Tso),LnTs2=log(Tso)^2,LnDa=log(Dao))]

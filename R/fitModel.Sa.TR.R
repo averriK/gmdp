@@ -22,15 +22,27 @@ fitModel.Sa.TR <- function(x, TRmin = 100, TRmax = 10000) {
     rm(list = ls())
   }, add = TRUE)
   . <- NULL
-
+ x <- x[AEP>0 & POE >0]
   if(any(is.na(x))){
     stop("The input data.table has NA values.")
   }
-  if (all(c("Sa", "TR") %in% colnames(x))) {
-    DATA <- x[TR >= TRmin & TR <= TRmax, .(LnA = log(Sa), LnTr = log(TR), AEP = 1 / TR)]
-  } else {
+ if(!all(c("Sa", "TR") %in% colnames(x))){
     stop("The input data.table must have columns named  Sa, and TR.")
   }
+
+  if(nrow( x[TR <= TRmax])==0){
+    # Remove constraint of periods.
+    warning("Very Low AEP values. There are not spectral ordinates with TR<=10000")
+   TRmax <- Inf
+  }
+  if(nrow( x[TR >= TRmin])==0){
+    # Remove constraint of periods.
+    warning("Very High AEP values. There are not spectral ordinates with TR>=100")
+    TRmin <- -Inf
+  }
+
+
+ DATA <- x[TR >= TRmin & TR <= TRmax, .(LnA = log(Sa), LnTr = log(TR), AEP = 1 / TR)]
 
   MDL <- stats::lm(LnA ~ ., data = DATA)
   SMDL <- summary(MDL)
