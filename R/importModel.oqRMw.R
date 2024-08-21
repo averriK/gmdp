@@ -62,7 +62,7 @@ importModel.oqRMw <- function(path, ITo,vref) {
     # lon <- HEADER[grep(HEADER,pattern=" lon=")] |> stringr::str_remove(pattern = " lon=") |> as.numeric()
     AUX <- k # (str_split(FILE,pattern = "Mag_Dist-")[[1]][2] |> stringr::str_split(pattern = "_"))[[1]][1]
 
-    SN <- paste0("V", as.integer(AUX) + 2)
+    # SN <- paste0("V", as.integer(AUX) + 2)
     DT <- data.table::fread(file = DATAPATH$datapath[k], skip = 1, header = TRUE, blank.lines.skip = TRUE)
     data.table::setnames(DT, old = c("mag", "dist", "poe"), new = c("Mw", "R", "POE"))
     DT[, IT := IT]
@@ -79,7 +79,7 @@ importModel.oqRMw <- function(path, ITo,vref) {
     stopifnot(OK)
     DT[imt == "PGA", imt := "Sa(0.0)"]
     DT[, Tn := stringr::str_extract(string = imt, pattern = "(?<=\\().*(?=\\))") |>  as.numeric()]
-    DT[, SN := SN]
+    # DT[, SN := SN]
     DT[, imt := NULL]
     COLS <- colnames(DT)
     OK <- FALSE
@@ -106,7 +106,6 @@ importModel.oqRMw <- function(path, ITo,vref) {
     nCOL <- "p"
     data.table::setnames(DT, old = oCOL, new = nCOL)
 
-    # DT <- DT[,list(Mw,R,p,rlz,Tn,AEP,TR,LAT,LON,SN)]
     DHT <- data.table::rbindlist(list(DHT, DT))
   }
   return(DHT)

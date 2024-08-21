@@ -61,7 +61,7 @@ on.exit(expr = {rm(list = ls())}, add = TRUE)
 
   # Tag Site Conditions
   if (!is.null(RMwTable)) {
-    RMwTable[, SID := Vs30toSID(Vref)]
+    RMwTable[, SID := Vs30toSID(vref)]
     RMwTable[, Vs30 := vref]
     RMwTable[, SM := engine]
     RMwTable[, ID := IDo]

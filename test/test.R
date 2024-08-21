@@ -1,13 +1,13 @@
 # Example #1
 
-devtools::load_all()
-GMDP <- buildGMDP(vref=760,path="test/shm6_760/",IDo="shm6_760")
+# devtools::load_all()
+# GMDP <- buildGMDP(vref=760,path="test/shm6_760/",IDo="shm6_760")
+#
+# devtools::load_all()
+# GMDP <- buildGMDP(vref=760,path="test/gem_760/",IDo="shm6_760")
 
 devtools::load_all()
-GMDP <- buildGMDP(vref=760,path="test/gem_760/",IDo="shm6_760")
-
-devtools::load_all()
-GMDP <- buildGMDP(vref=760,path="test/760/",IDo="ARM4V4D")
+GMDP <- buildGMDP(vref=760,vs30=450,path="test/760/",IDo="ARM4V4D")
 
 
 # Example #2. No PGV data

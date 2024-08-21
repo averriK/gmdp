@@ -18,7 +18,7 @@ POE <- NULL
 SC <- NULL
 SID <- NULL
 SM <- NULL
-SN <- NULL
+# SN <- NULL
 Sa <- NULL
 Sa_Unit <- NULL
 TR <- NULL
