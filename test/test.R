@@ -1,18 +1,31 @@
 # Example #1
 
-# devtools::load_all()
-# GMDP <- buildGMDP(vref=760,path="test/shm6_760/",IDo="shm6_760")
+
 #
-# devtools::load_all()
-# GMDP <- buildGMDP(vref=760,path="test/gem_760/",IDo="shm6_760")
+devtools::load_all()
+GMDP <- buildGMDP(vref=760,path="test/gem_760/",IDo="shm6_760")
 
 devtools::load_all()
-GMDP <- buildGMDP(vref=760,vs30=450,path="test/760/",IDo="ARM4V4D")
+GMDP <- buildGMDP(vref=760,vs30=450,path="test/760_v19/",IDo="ARM2V4D")
 
 
 # Example #2. No PGV data
 devtools::load_all()
-GMDP <- buildGMDP(vref=3000,vs30=450,path="test/3000/",IDo="ARM4V4D")
+GMDP <- buildGMDP(vref=3000,vs30=450,path="test/3000/",IDo="ARM2V4D")
+
+# ----------------------------------------------------------------------------
+# Non working examples
+# ----------------------------------------------------------------------------
+devtools::load_all()
+GMDP <- buildGMDP(vref=760,path="test/shm6_760/",IDo="shm6_760")
+
+devtools::load_all()
+GMDP <- buildGMDP(vref=760,vs30=450,path="test/760_v23/",IDo="ARM2O12")
+
+
+# ----------------------------------------------------------------------------
+#
+# ----------------------------------------------------------------------------
 
 # Example #2. No PGV data
 devtools::load_all()

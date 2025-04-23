@@ -6,6 +6,7 @@
 #' @param vs30 numeric Vs30 Step
 #' @param vref Vs30 in m/s
 #' @param engine character c("openquake","user")
+#' @param quantile_AF character c("mean",0.16,0.50,0.84)
 #'
 #' @return list
 #' @export
@@ -15,10 +16,10 @@
 #'
 #' @examples
 #'
-buildGMDP <- function(path, IDo="00000000",engine="openquake",vs30=NULL,vref) {
+buildGMDP <- function(path, IDo="00000000",engine="openquake",vs30=NULL,vref,quantile_AF="mean") {
 on.exit(expr = {rm(list = ls())}, add = TRUE)
   . <- NULL
-  AF_q_TARGET <- "mean"
+  AF_q_TARGET <- quantile_AF
   # *********************************************************************
   # Build AEPTable ----
 
@@ -73,7 +74,7 @@ on.exit(expr = {rm(list = ls())}, add = TRUE)
 
   # *********************************************************************
   # Build SaTR model ----
-  message(sprintf("> Fit AEP  modelfrom %s...", path))
+  message(sprintf("> Fit AEP  model from %s...", path))
   Tn_PGA <- AEPTable[Tn>=0]$Tn |> min()
   SaTRmodel <- AEPTable[, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("lat","lon","depth","Tn", "p")][, .(lat,lon,depth,Tn, p, a, b, c, sdLnA,Sa_Unit="g")]
 
