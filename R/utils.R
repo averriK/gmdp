@@ -201,36 +201,64 @@ buildParamUHS <- function(fitDT, AEPTable) {
 
 #' @noRd
 applySiteAmp <- function(dt, vs30vec, vref, quantAF) {
-  # dt is either AEPTable or UHSTable
-  # For each vs30, call dsra::fitModel.AF.TR
-  # We assume there's a Tn=0 => PGA in dt or not
+  # dt is either AEPTable or UHSTable with columns like:
+  #   (lat, lon, depth, p, Tn, Sa, TR, etc.)
+
+  # 1) Determine the grouping columns (lat, lon, depth, p, and TR if it exists)
+  grouping <- c("lat","lon","depth","p")
+  if ("TR" %in% names(dt)) {
+    grouping <- c(grouping, "TR")
+  }
+
+  # We'll collect final AF results in resAF
   resAF <- data.table()
-  # group by lat, lon, depth, p, Tn
-  grouping <- intersect(c("lat","lon","depth","p","Tn"), names(dt))
 
   for (Vs in vs30vec) {
-    # Must define or merge a "PGA" col if Tn=0 is present
-    # e.g. we can do a self-join. This is the same approach you had:
-    pgaKey <- dt[Tn==0, .(PGA=Sa), by=setdiff(grouping, "Tn")]
-    tmp    <- merge(dt, pgaKey, by=setdiff(grouping, "Tn"), all.x=TRUE)
+    # (A) Identify Tn=0 rows in dt, and pick exactly one row per grouping
+    #     e.g. if multiple Tn=0 rows exist, we pick the one with the largest Sa.
+    #     This avoids duplicates => no cartesian blow-up.
+    pgaKey <- dt[Tn == 0,
+                 .(PGA = Sa[which.max(Sa)]),  # or Sa[1L] if you prefer the first
+                 by = grouping
+    ]
+    # If no Tn=0 exist, pgaKey is empty => the merge will just yield NA for PGA below
 
-    # Then get AF
+    # (B) Merge dt with pgaKey on these grouping columns
+    tmp <- merge(
+      dt,
+      pgaKey,
+      by       = grouping,
+      all.x    = TRUE
+      # no allow.cartesian=TRUE => we do not want cartesian expansions
+    )
+
+    # (C) Now fit site amplification for each group (including Tn, because
+    #     dsra::fitModel.AF.TR is done by= grouping that includes Tn).
+    #     But note that in the data, Tn is outside "grouping" above,
+    #     so we just add it here:
+    full_group <- c(grouping, "Tn")  # Tn is not in "grouping" for pgaKey
+
     AFdt <- tmp[
       ,
       dsra::fitModel.AF.TR(
         .x   = .SD,
-        pga  = PGA,
+        pga  = PGA,         # from the merged column
         q    = quantAF,
         Tn   = Tn,
         vs30 = Vs,
         vref = vref
       ),
-      by=grouping
+      by = full_group
     ]
+
+    # Accumulate results
     resAF <- rbind(resAF, AFdt, fill=TRUE)
   }
+
   return(resAF)
 }
+
+
 
 #' @noRd
 mergeAF <- function(dt, AFdt) {

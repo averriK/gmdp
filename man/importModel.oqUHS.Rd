@@ -7,32 +7,18 @@
 importModel.oqUHS(path)
 }
 \arguments{
-\item{path}{Character. Path to the folder containing \code{*uhs-csv.zip} files.}
+\item{path}{Character. Directory with UHS csv or zip}
 }
 \value{
-A \code{data.table} with the columns listed above. If no valid files are found,
-returns an empty data.table.
+A data.table with columns:
+\itemize{
+\item \strong{lon, lat, depth} (if depth is found)
+\item \strong{rate, Tn, Sa, p, ITo}
+}
 }
 \description{
-Reads one or more \code{uhs-csv.zip} archives in the specified folder, unzips them,
-and parses any \code{uhs*.csv} files containing direct Uniform Hazard Spectrum data.
-This yields columns like:
-\itemize{
-\item \strong{lon, lat, depth} (if depth is in the CSV)
-\item \strong{rate} (the numeric value extracted from e.g. "0.095160~...")
-\item \strong{Tn} (period in seconds, 0 for PGA)
-\item \strong{Sa} (spectral acceleration in g)
-\item \strong{p} (quantile, if present in header)
-\item \strong{ITo} (investigation_time from header)
-}
-}
-\details{
-The code creates a fresh subdirectory \code{.temp_oqUHS_<timestamp>} under \code{path},
-unzips all matching \code{uhs-csv.zip} there, parses the resulting CSV files, and then
-deletes the subdirectory.
-}
-\examples{
-\dontrun{
-UHS_dt <- importModel.oqUHS("path/to/oq/output")
-}
+Reads "uhs*.csv" or "uhs-csv.zip" from \code{path}, skipping the first line
+(metadata) and treating the second line as the column header. Then each
+column name like "0.095160~PGA" is melted, with "exceed_tag" parsed by
+\code{.parseUHScolumn()} => \verb{(rate, Tn)}.
 }

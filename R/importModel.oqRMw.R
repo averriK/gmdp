@@ -1,120 +1,103 @@
 #' @title Import Disaggregation (R-Mw-p) from OpenQuake
 #'
 #' @description
-#' Reads one or more `.zip` archives in \code{path}, unzips them, and then looks
-#' for files named like \code{"Mag_Dist"} (but not \code{"TRT"}). If a "-mean" file exists,
-#' that one is used. The data is returned with columns:
+#' Reads files named "Mag_Dist" (not "TRT") from the .zip or folder. If a
+#' "Mag_Dist-mean" is present, we pick that first. Skips the first line
+#' (metadata), treats second line as column headers, renames (mag,dist,poe)->(Mw,R,POE),
+#' and (rlz|mean)->p. Then calculates AEP=POE/ITo, TR=1/AEP, Tn from "imt" if present.
+#'
+#' @param path Character. Folder with `.zip` or direct `Mag_Dist*` CSV
+#' @param ITo Numeric. Investigation time
+#' @param vref Numeric. Vs30 for reference (not mandatory)
+#'
+#' @return data.table or NULL if no valid data found. Columns:
 #' \itemize{
-#'   \item \strong{Mw, R, POE}
-#'   \item \strong{AEP, TR}
-#'   \item \strong{Tn} (parsed from \code{imt}, e.g. "Sa(0.0)"),
-#'   \item \strong{p} (renamed from "mean" or "rlz")
+#'   \item Mw, R, POE, p, Tn, AEP, TR, IT
 #' }
-#'
-#' @param path Character. Path to the folder containing .zip with disagg outputs.
-#' @param ITo Numeric. Investigation time, e.g. 50.
-#' @param vref Numeric. Reference Vs30 in m/s (not required, just for logging).
-#'
-#' @return \code{data.table} or \code{NULL} if no valid files are found.
-#'
 #' @import data.table
-#' @importFrom stringr str_extract
 #' @export
 importModel.oqRMw <- function(path, ITo, vref) {
   if (!dir.exists(path)) {
-    stop("`path` must be an existing directory.")
+    stop("Path does not exist: ", path)
   }
 
-  # Create a local temp subdir
   tmp_dir <- file.path(path, paste0(".temp_oqRMw_", as.integer(Sys.time())))
   if (dir.exists(tmp_dir)) {
     unlink(tmp_dir, recursive=TRUE, force=TRUE)
   }
   dir.create(tmp_dir, showWarnings=FALSE)
 
-  # Unzip all .zip in path
   zip_files <- list.files(path, pattern="\\.zip$", full.names=TRUE)
-  if (length(zip_files)==0) {
-    message("No .zip files found in: ", path)
-    return(NULL)
+  if (length(zip_files)) {
+    for (zf in zip_files) {
+      utils::unzip(zf, exdir=tmp_dir, junkpaths=TRUE)
+    }
   }
-  for (zf in zip_files) {
-    utils::unzip(zf, exdir=tmp_dir, junkpaths=TRUE)
-  }
+  search_dir <- if (length(zip_files)) tmp_dir else path
 
-  # Now find "Mag_Dist" files, ignoring "TRT"
-  all_files <- list.files(tmp_dir, pattern="Mag_Dist", full.names=TRUE)
+  # find Mag_Dist (not TRT)
+  all_files <- list.files(search_dir, pattern="Mag_Dist", full.names=TRUE)
   all_files <- all_files[!grepl("TRT", all_files)]
-  if (length(all_files)==0) {
+  if (!length(all_files)) {
     unlink(tmp_dir, recursive=TRUE, force=TRUE)
     message("No 'Mag_Dist' files found in: ", path)
     return(NULL)
   }
-
-  # Possibly pick "-mean" version if present
   mean_files <- grep("Mag_Dist-mean", all_files, value=TRUE)
-  if (length(mean_files)>0) {
+  if (length(mean_files)) {
     all_files <- mean_files
   }
 
   DHT <- data.table()
+  for (f_ in all_files) {
+    meta_line <- tryCatch(readLines(f_, n=1L), error=function(e) "")
+    # if you want lat/lon from meta_line, parse here
 
-  for (file_i in all_files) {
-    # read lines, skip 1 row
     dt_raw <- tryCatch(
-      data.table::fread(file_i, skip=1, header=TRUE, blank.lines.skip=TRUE),
+      data.table::fread(f_, skip=1, header=TRUE, blank.lines.skip=TRUE),
       error=function(e) NULL
     )
-    if (is.null(dt_raw)) {
-      warning("Failed reading file: ", basename(file_i), ". Skipping.")
+    if (is.null(dt_raw) || !nrow(dt_raw)) {
       next
     }
 
-    # check required cols
     required_cols <- c("mag","dist","poe","imt")
     missing_cols  <- setdiff(required_cols, names(dt_raw))
-    if (length(missing_cols)>0) {
-      warning("File '", basename(file_i), "' missing: ", paste(missing_cols, collapse=", "), ". Skipping.")
+    if (length(missing_cols)) {
       next
     }
 
-    setnames(dt_raw, old=c("mag","dist","poe"), new=c("Mw","R","POE"))
+    setnames(dt_raw, old=c("mag","dist","poe"), new=c("Mw","R","POE"), skip_absent=TRUE)
     if ("iml" %in% names(dt_raw)) {
-      dt_raw[, iml:=NULL]
+      dt_raw[, iml := NULL]
     }
 
-    # rename "rlz" or "mean" -> p
+    # rename (rlz|mean)->p
     rlz_col <- grep("rlz|mean", names(dt_raw), value=TRUE)
     if (length(rlz_col)==1) {
       setnames(dt_raw, old=rlz_col, new="p")
-    } else if (length(rlz_col)>1) {
-      warning("Multiple 'rlz|mean' columns in file '", basename(file_i), "'. Skipping.")
-      next
     } else {
-      warning("No 'rlz' or 'mean' col in file '", basename(file_i), "'. Skipping.")
+      # skip file if no single p col
       next
     }
 
-    # Convert "imt", e.g. "PGA" -> "Sa(0.0)"
+    # convert "imt" => Tn
     dt_raw[imt=="PGA", imt:="Sa(0.0)"]
-    dt_raw[, Tn := 0]
-    dt_raw[, Tn := as.numeric(stringr::str_extract(imt, "(?<=\\()\\d+\\.*\\d*(?=\\))"))]
-    dt_raw[is.na(Tn), Tn := 0]
+    dt_raw[, Tn := stringr::str_extract(imt, "(?<=\\()\\d+\\.*\\d*(?=\\))")]
+    dt_raw[, Tn := as.numeric(Tn)]
+    dt_raw[is.na(Tn), Tn:=0]
 
-    # compute AEP, TR
-    dt_raw[, IT  := ITo]
-    dt_raw[, AEP := POE / IT]
-    dt_raw[, TR  := 1/AEP]
-
-    DHT <- rbind(DHT, dt_raw, fill=TRUE, use.names=TRUE)
+    dt_raw[, IT:= ITo]
+    dt_raw[, `:=`(AEP=POE/IT, TR=1/(POE/IT))]
+    DHT <- rbind(DHT, dt_raw, fill=TRUE)
   }
 
-  # clean up
   unlink(tmp_dir, recursive=TRUE, force=TRUE)
-
-  if (nrow(DHT)==0) {
-    message("No valid disagg data found after unzipping in: ", path)
+  if (!nrow(DHT)) {
+    message("No valid disagg data found.")
     return(NULL)
   }
+  # remove duplicates if desired
+  DHT <- unique(DHT)
   return(DHT[])
 }

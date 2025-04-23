@@ -7,23 +7,21 @@
 importModel.oqRMw(path, ITo, vref)
 }
 \arguments{
-\item{path}{Character. Path to the folder containing .zip with disagg outputs.}
+\item{path}{Character. Folder with \code{.zip} or direct \verb{Mag_Dist*} CSV}
 
-\item{ITo}{Numeric. Investigation time, e.g. 50.}
+\item{ITo}{Numeric. Investigation time}
 
-\item{vref}{Numeric. Reference Vs30 in m/s (not required, just for logging).}
+\item{vref}{Numeric. Vs30 for reference (not mandatory)}
 }
 \value{
-\code{data.table} or \code{NULL} if no valid files are found.
+data.table or NULL if no valid data found. Columns:
+\itemize{
+\item Mw, R, POE, p, Tn, AEP, TR, IT
+}
 }
 \description{
-Reads one or more \code{.zip} archives in \code{path}, unzips them, and then looks
-for files named like \code{"Mag_Dist"} (but not \code{"TRT"}). If a "-mean" file exists,
-that one is used. The data is returned with columns:
-\itemize{
-\item \strong{Mw, R, POE}
-\item \strong{AEP, TR}
-\item \strong{Tn} (parsed from \code{imt}, e.g. "Sa(0.0)"),
-\item \strong{p} (renamed from "mean" or "rlz")
-}
+Reads files named "Mag_Dist" (not "TRT") from the .zip or folder. If a
+"Mag_Dist-mean" is present, we pick that first. Skips the first line
+(metadata), treats second line as column headers, renames (mag,dist,poe)->(Mw,R,POE),
+and (rlz|mean)->p. Then calculates AEP=POE/ITo, TR=1/AEP, Tn from "imt" if present.
 }

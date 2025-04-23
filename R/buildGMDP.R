@@ -30,7 +30,7 @@ buildGMDP <- function(path,
                       vref,
                       vs30          = NULL,
                       IDo           = "gmdp",
-                      param         = TRUE,
+                      param         = FALSE,
                       quantile_AF   = "mean",
                       TRmin         = 100,
                       TRmax         = 10000) {

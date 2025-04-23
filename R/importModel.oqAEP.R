@@ -1,114 +1,121 @@
-#' @title Import AEP (Hazard Curves) from OpenQuake Outputs
+#' @title Import AEP (Hazard Curves) from OpenQuake
 #'
 #' @description
-#' Reads one or more `*.zip` archives in \code{path}, unzips them into a temporary
-#' subfolder, looks for files named \code{"hazard_curve*"} or \code{"quantile_curve*"},
-#' parses, and returns a data.table of `(lon, lat, depth, Tn, p, Sa, POE, AEP, TR)`.
+#' Reads hazard-curve or quantile-curve CSV files (or .zip) from \code{path},
+#' skipping the first line (metadata) and treating the second line as column
+#' headers (to match old code). Melts columns like "poe-0.001" => (Sa=0.001, POE).
+#' Then computes AEP=-log(1-POE)/ITo and TR=-ITo/log(1-POE).
 #'
-#' @param path Character. Path to the folder containing the .zip files.
-#' @param vref Numeric. Reference Vs30 in m/s (not mandatory for reading, just stored or checked).
+#' It returns a table with potential duplicates if the same site is repeated
+#' multiple times. We also do `unique()` so each row is unique.
 #'
-#' @return A data.table with columns:
-#'   \itemize{
-#'     \item \strong{lon, lat, depth} (if depth is in the CSV)
-#'     \item \strong{Tn} (period in seconds; 0 for PGA, -1 for PGV if present)
-#'     \item \strong{p} (quantile or "mean")
-#'     \item \strong{Sa} (spectral acceleration level in g, from "poe-...")
-#'     \item \strong{POE} (probability of exceedance)
-#'     \item \strong{AEP} (annual exceedance probability = -log(1-POE)/ITo)
-#'     \item \strong{TR} (return period = -ITo/log(1-POE))
-#'     \item \strong{ITo} (investigation time extracted from header)
-#'   }
+#' @param path Character. Directory containing hazard_curve*.csv or .zip
+#' @param vref Numeric. Reference Vs30 in m/s (not strictly required, stored or logged)
 #'
-#' @import data.table
+#' @return data.table with columns:
+#' \itemize{
+#'   \item \strong{lon, lat, depth} if present
+#'   \item \strong{Sa, POE, AEP, TR, Tn, p, ITo}
+#' }
 #' @export
 importModel.oqAEP <- function(path, vref) {
+  if (!dir.exists(path)) {
+    stop("Path does not exist: ", path)
+  }
 
+  # 1) Possibly unzip .zip => temp folder
   temp_subdir <- file.path(path, paste0(".temp_oqAEP_", as.integer(Sys.time())))
   if (dir.exists(temp_subdir)) {
-    # remove old leftover if it exists
-    unlink(temp_subdir, recursive = TRUE, force = TRUE)
+    unlink(temp_subdir, recursive=TRUE, force=TRUE)
   }
-  dir.create(temp_subdir, showWarnings = FALSE)
-
-  # 2) Unzip all .zip files in `path` into that temp_subdir
-  zip_files <- list.files(path, pattern = "\\.zip$", full.names = TRUE)
-  if (length(zip_files) == 0) {
-    stop("No .zip files found in '", path, "'.")
+  dir.create(temp_subdir, showWarnings=FALSE)
+  zip_files <- list.files(path, pattern="\\.zip$", full.names=TRUE)
+  if (length(zip_files)) {
+    for (zf in zip_files) {
+      utils::unzip(zf, exdir=temp_subdir, junkpaths=TRUE)
+    }
   }
-  for (zf in zip_files) {
-    utils::unzip(zipfile = zf, exdir = temp_subdir, junkpaths = TRUE)
-  }
+  search_dir <- if (length(zip_files)) temp_subdir else path
 
-  # 3) Identify hazard/quantile curve CSVs
-  hazard_files   <- list.files(temp_subdir, pattern = "hazard_curve.*\\.csv$",   full.names = TRUE)
-  quantile_files <- list.files(temp_subdir, pattern = "quantile_curve.*\\.csv$", full.names = TRUE)
-  all_files      <- c(hazard_files, quantile_files)
-
-  if (length(all_files) == 0) {
-    # Clean up and stop
-    unlink(temp_subdir, recursive = TRUE, force = TRUE)
+  # 2) Find hazard or quantile CSV
+  files_curves <- list.files(search_dir, pattern="(hazard_curve|quantile_curve).*\\.csv$", full.names=TRUE)
+  if (!length(files_curves)) {
+    unlink(temp_subdir, recursive=TRUE, force=TRUE)
     stop("No hazard_curve/quantile_curve CSV found in: ", path)
   }
 
-  result_list <- vector("list", length(all_files))
+  out_list <- vector("list", length(files_curves))
+  iCount <- 0
 
-  # 4) For each file, parse the header, read data, reshape wide->long
-  for (i in seq_along(all_files)) {
-    file_i <- all_files[i]
-    header_line <- tryCatch(
-      readLines(file_i, n = 1L),
-      error = function(e) ""
-    )
-    p_val <- .extractQuantileFromHeader(header_line)
-    ITo   <- .extractInvestigationTime(header_line)
-    Tn    <- .extractTnFromHeader(header_line)
+  for (f_ in files_curves) {
+    # read first line => parse p, ITo, Tn
+    line1 <- tryCatch(readLines(f_, n=1L), error=function(e)"")
+    p_val <- .extractQuantileFromHeader(line1)
+    ITo   <- .extractInvestigationTime(line1)
+    Tn    <- .extractTnFromHeader(line1)
 
-    dt_raw <- data.table::fread(file = file_i, skip = 1, header = TRUE)
-    measure_cols <- grep("^poe-[0-9\\.]+$", names(dt_raw), value = TRUE)
+    # read the data skipping line1, no header
+    dt_raw <- data.table::fread(f_, skip=1, header=FALSE, blank.lines.skip=TRUE)
+    if (!nrow(dt_raw)) next
 
-    if (length(measure_cols) == 0) {
-      stop("File '", basename(file_i), "' has no poe-* columns. Not a hazard/quantile curve?")
-    }
+    # 1st row => column names
+    col_names <- unlist(dt_raw[1,], use.names=FALSE)
+    setnames(dt_raw, col_names)
+    dt_raw <- dt_raw[-1]  # remove that row
 
-    # Might or might not have 'depth'
-    id_cols <- c("lon", "lat")
-    if ("depth" %in% names(dt_raw)) id_cols <- c(id_cols, "depth")
+    # identify id cols
+    id_cols <- c("lon","lat")
+    if ("depth" %in% col_names) id_cols <- c(id_cols, "depth")
+    # measure => "poe-xxx"
+    measure_cols <- grep("^poe-[0-9\\.]+$", col_names, value=TRUE)
+    if (!length(measure_cols)) next
 
     dt_long <- melt(
       dt_raw,
-      id.vars = id_cols,
-      measure.vars = measure_cols,
-      variable.name = "poe_label",
-      value.name    = "POE"
+      id.vars=id_cols,
+      measure.vars=measure_cols,
+      variable.name="poe_label",
+      value.name="POE"
     )
-    dt_long[, Sa := as.numeric(sub("poe-", "", poe_label))]
+    dt_long[, POE := as.numeric(POE)]
+    dt_long[, Sa  := as.numeric(sub("poe-","",poe_label))]
     dt_long[, poe_label := NULL]
 
-    # Filter out POE=1 if present
+    # filter out POE>=1
     dt_long <- dt_long[POE < 1]
 
-    # Compute AEP & TR
-    if (!is.na(ITo)) {
-      dt_long[, AEP := -log(1 - POE)/ITo]
-      dt_long[, TR  := -ITo / log(1 - POE)]
+    if (!is.na(ITo) && ITo>0) {
+      dt_long[, `:=`(
+        AEP = -log(1-POE)/ITo,
+        TR  = -ITo/log(1-POE)
+      )]
     } else {
-      dt_long[, `:=`(AEP = NA_real_, TR = NA_real_)]
+      dt_long[, `:=`(AEP=NA_real_, TR=NA_real_)]
     }
 
-    dt_long[, `:=`(ITo = ITo, Tn = Tn, p = p_val)]
-    result_list[[i]] <- dt_long
+    # store Tn, p
+    if (!is.na(Tn)) {
+      dt_long[, Tn := Tn]
+    } else {
+      # might be multiple Tn in one file
+      # we keep as NA unless you want advanced logic
+      dt_long[, Tn := NA_real_]
+    }
+    dt_long[, `:=`(p=p_val, ITo=ITo)]
+    out_list[[ iCount <- iCount+1 ]] <- dt_long
   }
 
-  # 5) Combine all into one data.table
-  DT <- rbindlist(result_list, use.names = TRUE, fill = TRUE)
+  unlink(temp_subdir, recursive=TRUE, force=TRUE)
+  out <- data.table::rbindlist(out_list, fill=TRUE, use.names=TRUE)
+  if (!nrow(out)) {
+    stop("No hazard data found after reading files in: ", path)
+  }
+  # remove duplicates
+  out <- unique(out)
 
-  # 6) Clean up
-  unlink(temp_subdir, recursive = TRUE, force = TRUE)
-
-  # reorder columns
-  col_order <- c("lon", "lat", "depth", "Tn", "p", "Sa", "POE", "AEP", "TR", "ITo")
-  col_order <- intersect(col_order, names(DT))
-  data.table::setcolorder(DT, col_order)
-  return(DT[])
+  # reorder
+  final_cols <- c("lon","lat","depth","Tn","p","Sa","POE","AEP","TR","ITo")
+  keepC <- intersect(final_cols, names(out))
+  data.table::setcolorder(out, keepC)
+  return(out[])
 }
