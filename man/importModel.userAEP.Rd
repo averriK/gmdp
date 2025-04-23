@@ -2,18 +2,35 @@
 % Please edit documentation in R/importModel.userAEP.R
 \name{importModel.userAEP}
 \alias{importModel.userAEP}
-\title{Import AEP values from user table in Excel}
+\title{Import AEP values from a user-provided Excel workbook}
 \usage{
 importModel.userAEP(path = NULL, filename = "AEP.xlsx")
 }
 \arguments{
-\item{path}{Path to the file}
+\item{path}{Path to the directory containing the file.}
 
-\item{filename}{Name of the file}
+\item{filename}{Name of the Excel file (default "AEP.xlsx").}
 }
 \value{
-AEPTable
+A data.table with columns:
+\itemize{
+\item \strong{Tn}: spectral period
+\item \strong{Sa}: ground-motion level (converted to numeric)
+\item \strong{AEP}: annual exceedance probability
+\item \strong{p}: the quantile or "mean" extracted from the sheet name
+\item \strong{POE, TR}: probability of exceedance, and return period
+\item \strong{IT}: investigation time (assumed 50 years)
+}
 }
 \description{
-Import AEP values from user table in Excel
+Reads an Excel file (\code{AEP.xlsx} by default) with multiple sheets named like "p=..."
+(e.g., "p=0.16", "p=mean"). Each sheet must have a column \code{Tn} and other columns
+representing spectral accelerations or ground-motion levels. The function melts those
+wide columns into two columns: \code{Sa}, \code{AEP}, and then computes \code{POE} and
+\code{TR} from a default \code{IT=50} year assumption.
+}
+\examples{
+\dontrun{
+userAEP <- importModel.userAEP(path = "/some/folder", filename="AEP.xlsx")
+}
 }

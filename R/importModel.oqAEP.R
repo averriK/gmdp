@@ -1,104 +1,114 @@
-#' Import Annual Exceedance Probabiliies (AEP) from openquake zip files.
+#' @title Import AEP (Hazard Curves) from OpenQuake Outputs
 #'
-#' @param path character. Path to the folder containing the hazard and quantile curves
-#' @param vref numeric. Reference Vs30 in m/s
+#' @description
+#' Reads one or more `*.zip` archives in \code{path}, unzips them into a temporary
+#' subfolder, looks for files named \code{"hazard_curve*"} or \code{"quantile_curve*"},
+#' parses, and returns a data.table of `(lon, lat, depth, Tn, p, Sa, POE, AEP, TR)`.
 #'
-#' @return A data.table with the following columns:
-#' @export importModel.oqAEP
+#' @param path Character. Path to the folder containing the .zip files.
+#' @param vref Numeric. Reference Vs30 in m/s (not mandatory for reading, just stored or checked).
 #'
-#' @examples
+#' @return A data.table with columns:
+#'   \itemize{
+#'     \item \strong{lon, lat, depth} (if depth is in the CSV)
+#'     \item \strong{Tn} (period in seconds; 0 for PGA, -1 for PGV if present)
+#'     \item \strong{p} (quantile or "mean")
+#'     \item \strong{Sa} (spectral acceleration level in g, from "poe-...")
+#'     \item \strong{POE} (probability of exceedance)
+#'     \item \strong{AEP} (annual exceedance probability = -log(1-POE)/ITo)
+#'     \item \strong{TR} (return period = -ITo/log(1-POE))
+#'     \item \strong{ITo} (investigation time extracted from header)
+#'   }
+#'
 #' @import data.table
-#' @importFrom stringr str_remove
-#' @importFrom stringr str_split
-#'
+#' @export
 importModel.oqAEP <- function(path, vref) {
-    . <- NULL
 
+  temp_subdir <- file.path(path, paste0(".temp_oqAEP_", as.integer(Sys.time())))
+  if (dir.exists(temp_subdir)) {
+    # remove old leftover if it exists
+    unlink(temp_subdir, recursive = TRUE, force = TRUE)
+  }
+  dir.create(temp_subdir, showWarnings = FALSE)
 
+  # 2) Unzip all .zip files in `path` into that temp_subdir
+  zip_files <- list.files(path, pattern = "\\.zip$", full.names = TRUE)
+  if (length(zip_files) == 0) {
+    stop("No .zip files found in '", path, "'.")
+  }
+  for (zf in zip_files) {
+    utils::unzip(zipfile = zf, exdir = temp_subdir, junkpaths = TRUE)
+  }
 
+  # 3) Identify hazard/quantile curve CSVs
+  hazard_files   <- list.files(temp_subdir, pattern = "hazard_curve.*\\.csv$",   full.names = TRUE)
+  quantile_files <- list.files(temp_subdir, pattern = "quantile_curve.*\\.csv$", full.names = TRUE)
+  all_files      <- c(hazard_files, quantile_files)
 
-    DT <- data.table::data.table()
-    PATH <- path
-    FILES <- list.files(path = PATH, pattern = "quantile_curve")
-    FILES <- c(FILES, list.files(path = PATH, pattern = "hazard_curve"))
-    DATAPATH <- data.table::data.table(name = FILES, datapath = file.path(PATH, FILES))
-    NR <- nrow(DATAPATH)
-    if (NR == 0) {
-        stop("No files found")
-        return(NULL)
+  if (length(all_files) == 0) {
+    # Clean up and stop
+    unlink(temp_subdir, recursive = TRUE, force = TRUE)
+    stop("No hazard_curve/quantile_curve CSV found in: ", path)
+  }
+
+  result_list <- vector("list", length(all_files))
+
+  # 4) For each file, parse the header, read data, reshape wide->long
+  for (i in seq_along(all_files)) {
+    file_i <- all_files[i]
+    header_line <- tryCatch(
+      readLines(file_i, n = 1L),
+      error = function(e) ""
+    )
+    p_val <- .extractQuantileFromHeader(header_line)
+    ITo   <- .extractInvestigationTime(header_line)
+    Tn    <- .extractTnFromHeader(header_line)
+
+    dt_raw <- data.table::fread(file = file_i, skip = 1, header = TRUE)
+    measure_cols <- grep("^poe-[0-9\\.]+$", names(dt_raw), value = TRUE)
+
+    if (length(measure_cols) == 0) {
+      stop("File '", basename(file_i), "' has no poe-* columns. Not a hazard/quantile curve?")
     }
 
-    # Read job.ini (if exists)
-    # IT <- ITo# gmdp.ini$IT
+    # Might or might not have 'depth'
+    id_cols <- c("lon", "lat")
+    if ("depth" %in% names(dt_raw)) id_cols <- c(id_cols, "depth")
 
-    for (k in seq_len(NR)) {
-        FILE <- DATAPATH$name[k]
-        #
-        AUX <- data.table::fread(file = DATAPATH$datapath[k], skip = 1, header = FALSE, blank.lines.skip = TRUE)
-        COLS <- unlist(AUX[1]) |> as.vector()
-        data.table::setnames(AUX, COLS)
-        VARS <- setdiff(COLS, grep(COLS, pattern = "poe-", value = TRUE))
-        DATA <- melt(data = AUX[-1], id.vars = VARS, variable = "Sa", value = "POE")
-        DATA <- DATA[, .(POE = as.numeric(POE), Sa = gsub(x = Sa, pattern = "poe-", replacement = "") |> as.numeric()), by = VARS]
+    dt_long <- melt(
+      dt_raw,
+      id.vars = id_cols,
+      measure.vars = measure_cols,
+      variable.name = "poe_label",
+      value.name    = "POE"
+    )
+    dt_long[, Sa := as.numeric(sub("poe-", "", poe_label))]
+    dt_long[, poe_label := NULL]
 
+    # Filter out POE=1 if present
+    dt_long <- dt_long[POE < 1]
 
-
-        # parse HEADER ----
-        p <- NULL
-        HEADER <- data.table::fread(file = DATAPATH$datapath[k], nrows = 1, header = FALSE) |>
-            str_split(",") |>
-            unlist()
-        HEADER <- HEADER[HEADER != "NA" & HEADER != "#"]
-
-        AUX <- grep(HEADER, pattern = "kind='quantile-", value = TRUE)
-        if (length(AUX) > 0) {
-            p <- str_remove(AUX, pattern = "kind='quantile-") |>
-                stringr::str_extract(pattern = "([0-9]+(\\.[0-9]+)?)") |>
-                as.numeric()
-        }
-        if (any(grepl(HEADER, pattern = "kind='mean'"))) {
-            p <- "mean"
-        }
-        if (is.null(p)) {
-            stop("Internal error: Unknown quantile \n %s", paste(HEADER, sep = ""))
-        }
-
-
-        ITo <- NULL
-        AUX <- grep(HEADER, pattern = "investigation_time=", value = TRUE)
-        if (length(AUX) > 0) {
-            ITo <- str_remove(AUX, pattern = "investigation_time=") |>
-                stringr::str_extract(pattern = "([0-9]+(\\.[0-9]+)?)") |>
-                as.numeric()
-        }
-        if (is.null(ITo)) {
-            stop("Internal error: Unknown investigation time:\n %s", paste(HEADER, sep = ""))
-        }
-
-
-        Tn <- NULL
-        AUX <- grep(HEADER, pattern = "imt='SA\\(([0-9]+(\\.[0-9]+)?)\\)'", value = TRUE)
-        if (length(AUX) > 0) {
-            Tn <- str_remove(AUX, pattern = "imt='SA") |>
-                stringr::str_extract(pattern = "([0-9]+(\\.[0-9]+)?)") |>
-                as.numeric()
-        }
-        if (any(grepl(HEADER, pattern = "imt='PGA'"))) {
-            Tn <- 0
-        }
-        if (any(grepl(HEADER, pattern = "imt='PGV'"))) {
-            Tn <- -1
-        }
-        if (is.null(Tn)) {
-            stop("Internal error: Unknown Tn:\n %s", paste(HEADER, sep = ""))
-        }
-
-        DATA <- DATA[, .(lat, lon, depth, ITo = ITo, Tn = Tn, p = p, Sa = Sa, POE = POE, AEP = -log(1 - POE) / ITo, TR = -ITo / log(1 - POE))]
-        DT <- data.table::rbindlist(list(DATA, DT))
+    # Compute AEP & TR
+    if (!is.na(ITo)) {
+      dt_long[, AEP := -log(1 - POE)/ITo]
+      dt_long[, TR  := -ITo / log(1 - POE)]
+    } else {
+      dt_long[, `:=`(AEP = NA_real_, TR = NA_real_)]
     }
-    # browser()
-    # ignore PGV
-    # DT <- DT[TR != Inf & AEP != Inf & AEP != 0 & Tn!=-1]
-    DT <- DT[Tn != -1]
-    return(DT[])
+
+    dt_long[, `:=`(ITo = ITo, Tn = Tn, p = p_val)]
+    result_list[[i]] <- dt_long
+  }
+
+  # 5) Combine all into one data.table
+  DT <- rbindlist(result_list, use.names = TRUE, fill = TRUE)
+
+  # 6) Clean up
+  unlink(temp_subdir, recursive = TRUE, force = TRUE)
+
+  # reorder columns
+  col_order <- c("lon", "lat", "depth", "Tn", "p", "Sa", "POE", "AEP", "TR", "ITo")
+  col_order <- intersect(col_order, names(DT))
+  data.table::setcolorder(DT, col_order)
+  return(DT[])
 }

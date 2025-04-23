@@ -1,146 +1,154 @@
-
-#' Title
+#' @title Build Ground-Motion Data Products
 #'
-#' @param path character
-#' @param IDo character Output IDo
-#' @param vs30 numeric Vs30 Step
-#' @param vref Vs30 in m/s
-#' @param engine character c("openquake","user")
-#' @param quantile_AF character c("mean",0.16,0.50,0.84)
+#' @description
+#' Reads OpenQuake outputs (hazard curves, direct UHS, disagg if found),
+#' optionally fits a parametric Sa-TR model, optionally applies site amplification,
+#' and returns final tables with minimal ephemeral variables.
 #'
-#' @return list
-#' @export
+#' @param path   Character. Path to folder containing OQ .zip outputs.
+#' @param vref   Numeric. Reference Vs30 (e.g. 760). If site amp is desired, must be 760 or 3000.
+#' @param vs30   Numeric vector of target site classes. If non-empty and \code{vref \%in\% c(760,3000)},
+#'   site amplification is applied.
+#' @param IDo    Character. A scenario ID label (default "gmdp").
+#' @param param  Logical. If TRUE, fit parametric model and produce new/smoothed hazard + UHS.
+#' @param quantile_AF Character or numeric. Which quantile or "mean" for site amp.
+#' @param TRmin Numeric. Min TR bound for param fitting.
+#' @param TRmax Numeric. Max TR bound for param fitting.
+#'
+#' @return A list with:
+#' \itemize{
+#'   \item \strong{AEPTable}: hazard data (original + param-based if any) with site amp if applied
+#'   \item \strong{UHSTable}: UHS data (original + param-based) with site amp if applied
+#'   \item \strong{RMwTable}: disaggregation data if found, else \code{NULL}
+#'   \item \strong{SaTRmodel}: param model results (if \code{param=TRUE})
+#'   \item \strong{AFmodel_AEP}, \strong{AFmodel_UHS}: site amp factors if any
+#' }
+#'
 #' @import data.table
-#' @import dsra
+#' @export
+buildGMDP <- function(path,
+                      vref,
+                      vs30          = NULL,
+                      IDo           = "gmdp",
+                      param         = TRUE,
+                      quantile_AF   = "mean",
+                      TRmin         = 100,
+                      TRmax         = 10000) {
+  # -------------------------------------------------------------------------
+  # 1) Import AEP (hazard curves), UHS, and disagg from path
 
-#'
-#' @examples
-#'
-buildGMDP <- function(path, IDo="00000000",engine="openquake",vs30=NULL,vref,quantile_AF="mean") {
-on.exit(expr = {rm(list = ls())}, add = TRUE)
-  . <- NULL
-  AF_q_TARGET <- quantile_AF
-  # *********************************************************************
-  # Build AEPTable ----
-
-  message(sprintf("> Build AEP Table..."))
-  AEPTable <- NULL
-  if(engine=="openquake"){
-    message(sprintf("> Unzip OQ data ..."))
-    TEMP <- tempdir()
-    if (dir.exists(TEMP)) {
-      unlink(TEMP, recursive = TRUE)
-      TEMP <- tempdir()
-    }
-
-    FILES <- list.files(path, pattern = "*.zip", full.names = TRUE)
-    for (ZIPFILE in FILES) {
-      utils::unzip(zipfile = ZIPFILE, junkpaths = TRUE, exdir = TEMP)
-    }
-
-    message(sprintf("> Import AEP data from openquake..."))
-    AEPTable <- importModel.oqAEP(path = TEMP,vref=vref)
-
+  AEPTable <- importModel.oqAEP(path = path, vref = vref)
+  if (!nrow(AEPTable)) {
+    stop("No hazard-curve data found in: ", path)
   }
 
-  if(engine=="user"){
-    message(sprintf("> Unzip USER data ..."))
-    message(sprintf("> Import AEP data from openquake..."))
-    AEPTable <- importModel.userAEP(path,filename= "AEP.xlsx")
+  UHSTable <- importModel.oqUHS(path = path)
+  if (!nrow(UHSTable)) {
+    message("No direct UHS found in path: ", path)
+    # We'll keep it empty for now, might fill param-based UHS later
   }
-  ITo <- unique(AEPTable$ITo)[1]
-  # *********************************************************************
-  # Build Disaggregation Table ----
 
   RMwTable <- NULL
-  message(sprintf("> Building Disagregation Hazard Table..."))
-  if(engine=="openquake"){
-    message(sprintf("> Import Disaggregation data from openquake..."))
-    RMwTable <- importModel.oqRMw(path = TEMP, ITo=ITo,vref=vref)
-  }
-
-
-  # Tag Site Conditions
-  if (!is.null(RMwTable)) {
-    RMwTable[, SID := Vs30toSID(vref)]
-    RMwTable[, Vs30 := vref]
-    RMwTable[, SM := engine]
-    RMwTable[, ID := IDo]
-    RMwTable[, IT := ITo]
-  } else {
-    message(sprintf("> Disaggregation data not available."))
-  }
-
-
-  # *********************************************************************
-  # Build SaTR model ----
-  message(sprintf("> Fit AEP  model from %s...", path))
-  Tn_PGA <- AEPTable[Tn>=0]$Tn |> min()
-  SaTRmodel <- AEPTable[, fitModel.Sa.TR( x = .SD, TRmin = 100, TRmax = 10000), by = c("lat","lon","depth","Tn", "p")][, .(lat,lon,depth,Tn, p, a, b, c, sdLnA,Sa_Unit="g")]
-
-
-  # *********************************************************************
-  # Get UHS ordinates ----
-  message(sprintf("> Set UHS spectral ordinates..."))
- # Build UHSTable
-  S1 <- seq(100,10000,by=25)
-  S2 <- c(475,500,975,1000,2000,2475,2500,5000,10000)
-  TRo <- c(S1,S2) |> unique() |> sort()
-
-  UHSTable <- SaTRmodel[, .(IT = ITo, POE = ITo * 1 / TRo, TR = TRo, Sa = exp(a + b * log(TRo) + c * 1 / TRo), AEP = 1 / TRo), by = .(lat,lon,depth,Tn, p)]
-# no NAs
-
-
-  # *********************************************************************
-  # Get PGA at vref ----
-  PeakTable <- UHSTable[Tn == Tn_PGA,.(ID=IDo,PGA=Sa),by=.(lat,lon,depth,p,TR)]
-  COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(PeakTable)]
-  UHSTable <- PeakTable[UHSTable, on = COLS]
-  PeakTable <- AEPTable[Tn==Tn_PGA,.(ID=IDo,PGA=Sa),by=.(p,Sa)] |> unique()
-  COLS <- colnames(AEPTable)[colnames(AEPTable) %in% colnames(PeakTable)]
-  AEPTable <- PeakTable[AEPTable, on = COLS]
-
-  # *********************************************************************
-  # Get AF*Sa for UHS ordinates  ----
-  AFmodel_UHS <- data.table()
-  AFmodel_AEP <- data.table()
-  if(!is.null(vs30) & vref %in% c(760,3000)){
-    for (Vs in vs30) {
-      # AF estimated only as mean value. Ignoring quantiles from Sa(Tn). Setting p=0.50
-      # by = .(p,lat,lon,depth,Tn) set results in a data.table .x with TR rows
-      message(sprintf("> Fit UHS Site Response model (Stewart2017) for target Vs30 %4.1f m/s...", Vs))
-      AUX <- UHSTable[, dsra::fitModel.AF.TR(.x=.SD,pga=PGA,q=AF_q_TARGET,Tn=Tn, vs30 = Vs,vref=vref), by = .(p,lat,lon,depth,Tn)]
-      AFmodel_UHS <- data.table::rbindlist(list(AFmodel_UHS, AUX), use.names = TRUE)
-      message(sprintf("> Fit AEP Site Response model (Stewart2017) for target Vs30 %4.1f m/s...", Vs))
-      AUX <- AEPTable[, dsra::fitModel.AF.TR(.x=.SD,pga=PGA,q=AF_q_TARGET,Tn=Tn, vs30 = Vs,vref=vref), by = .(p,lat,lon,depth,Tn)]
-      AFmodel_AEP <- data.table::rbindlist(list(AFmodel_AEP, AUX), use.names = TRUE)
+  if (exists("importModel.oqRMw", mode="function")) {
+    # Try reading disagg
+    # We'll get ITo from AEP if present, else default 50
+    ITo <- if ("ITo" %in% names(AEPTable)) unique(AEPTable$ITo)[1] else 50
+    RMwTable <- importModel.oqRMw(path, ITo, vref)
+    if (is.null(RMwTable) || !nrow(RMwTable)) {
+      RMwTable <- NULL
     }
-    # update UHSTable
-    message(sprintf("> Update UHSTable ..."))
-    AUX <- AFmodel_UHS[,.(Vref,Vs30,lat,lon,depth,p,Tn,AF,SID,SM,PGA,sdLnAF)] |> unique()
-    COLS <- colnames(AUX)[colnames(AUX) %in% colnames(UHSTable)]
-    AFmodel_UHS <- unique(AFmodel_UHS, by = c("lat","lon","depth","Tn", "p", "Vs30", "Vref", "SID", "SM"))
-    UHSTable <- AUX[UHSTable, on = COLS][,`:=`(Sa=AF*Sa,PGA=AF*PGA)] |> unique()
-
-    # update AEPTable
-    message(sprintf("> Update AEPTable ..."))
-    AUX <- AFmodel_AEP[,.(Vref,Vs30,lat,lon,depth,p,Tn,AF,SID,SM,PGA,sdLnAF)] |> unique()
-    COLS <- colnames(AUX)[colnames(AUX) %in% colnames(AEPTable)]
-    AFmodel_AEP <- unique(AFmodel_AEP, by = c("lat","lon","depth","Tn", "p", "Vs30", "Vref", "SID", "SM"))
-    AEPTable <- AUX[AEPTable, on = COLS][,`:=`(Sa=AF*Sa,PGA=AF*PGA)] |> unique()
-
-
   }
 
-  if(!is.null(vs30) & !(vref %in% c(760,3000)) ){
-    stop("Error: You are trying to obtain spectral ordinates from an openquake model with vref=%4.1f to a target vs30=%4.1f but amplification factors AF are available for vref = 760 and vref=3000 m/s. ",vref,vs30)
+  # If no ITo in AEP, define 50
+  if (!("ITo" %in% names(AEPTable))) {
+    AEPTable[, ITo := 50]
   }
 
-  if(is.null(vs30)){ #default case
-    UHSTable <- data.table(UHSTable,Vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake",sdLnAF=0)
-    AEPTable <- data.table(AEPTable,Vref=vref,Vs30=vref,AF=1,SID=Vs30toSID(vref),SM="openquake",sdLnAF=0)
-
+  # Mark original data
+  AEPTable[, `:=`(paramBased=FALSE, siteAmp=FALSE, AF=1)]
+  if (nrow(UHSTable)) {
+    if (!("ITo" %in% names(UHSTable))) {
+      UHSTable[, ITo := unique(AEPTable$ITo)[1]]
+    }
+    UHSTable[, `:=`(paramBased=FALSE, siteAmp=FALSE, AF=1)]
   }
 
-  return(list(AEPTable = AEPTable, UHSTable = UHSTable, AFmodel_AEP=AFmodel_AEP,AFmodel_UHS=AFmodel_UHS,SaTRmodel = SaTRmodel, RMwTable = RMwTable))
+  # -------------------------------------------------------------------------
+  # 2) (Optional) Fit param model on hazard curves => generate param-based curves
+  SaTRmodel <- data.table()
+  if (param) {
+    message("> Fitting parametric model on hazard curves ...")
+    groupCols <- intersect(c("lat","lon","depth","p","Tn"), names(AEPTable))
+    SaTRmodel <- AEPTable[
+      ,
+      fitModel.Sa.TR(.SD, TRmin=TRmin, TRmax=TRmax),
+      by=groupCols
+    ]
+
+    if (!is.null(SaTRmodel) && nrow(SaTRmodel)) {
+      # Build param-based hazard expansions
+      newHaz <- buildParamHaz(SaTRmodel, AEPTable)
+      # Mark them paramBased=TRUE
+      newHaz[, `:=`(paramBased=TRUE, siteAmp=FALSE, AF=1)]
+      AEPTable <- rbind(AEPTable, newHaz, fill=TRUE)
+
+      # Also build param-based UHS
+      newUHS <- buildParamUHS(SaTRmodel, AEPTable)
+      if (nrow(newUHS)) {
+        newUHS[, `:=`(paramBased=TRUE, siteAmp=FALSE, AF=1)]
+        UHSTable <- rbind(UHSTable, newUHS, fill=TRUE)
+      }
+    } else {
+      message("Param model returned 0 rows => no smoothing generated.")
+      SaTRmodel <- data.table()
+    }
+  } else {
+    message("> param=FALSE => skipping param-based steps.")
+  }
+
+  # -------------------------------------------------------------------------
+  # 3) (Optional) Site Amplification
+  AFmodel_AEP <- data.table()
+  AFmodel_UHS <- data.table()
+
+  doAmp <- (!is.null(vs30) && length(vs30)>0 && vref %in% c(760,3000))
+  if (doAmp) {
+    message("> Performing site amplification for vs30=", paste(vs30, collapse=", "))
+    # Amplify hazard
+    AFmodel_AEP <- applySiteAmp(AEPTable, vs30, vref, quantile_AF)
+    if (nrow(AFmodel_AEP)) {
+      # Merge AF to AEPTable
+      AEPTable <- mergeAF(AEPTable, AFmodel_AEP)
+    }
+
+    # Amplify UHS
+    if (nrow(UHSTable)) {
+      AFmodel_UHS <- applySiteAmp(UHSTable, vs30, vref, quantile_AF)
+      if (nrow(AFmodel_UHS)) {
+        UHSTable <- mergeAF(UHSTable, AFmodel_UHS)
+      }
+    }
+  } else {
+    message("> No site amplification done.")
+  }
+
+  # Final labeling
+  AEPTable[, `:=`(ID=IDo, Vref=vref)]
+  UHSTable[, `:=`(ID=IDo, Vref=vref)]
+  if (!is.null(RMwTable)) {
+    RMwTable[, `:=`(ID=IDo, Vref=vref)]
+  }
+
+  # -------------------------------------------------------------------------
+  # Return
+  return(list(
+    AEPTable     = AEPTable,
+    UHSTable     = UHSTable,
+    RMwTable     = RMwTable,
+    SaTRmodel    = SaTRmodel,
+    AFmodel_AEP  = AFmodel_AEP,
+    AFmodel_UHS  = AFmodel_UHS
+  ))
 }
+
+

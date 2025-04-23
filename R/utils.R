@@ -1,9 +1,116 @@
+#' @title Extract Quantile or Mean from OpenQuake Header
+#'
+#' @description
+#' Parses a header line (e.g. from an OpenQuake hazard CSV) to detect either
+#' `kind='quantile-0.xxx'` or `kind='mean'`.
+#'
+#' @param line Character string (usually the first line read from a CSV).
+#'
+#' @return A numeric quantile (e.g. 0.16, 0.5, 0.84) or the character "mean".
+#'   Returns \code{NA} if nothing is found.
+#'
+#' @keywords internal
+#' @export
+.extractQuantileFromHeader <- function(line) {
+  if (grepl("kind='mean'", line)) {
+    return("mean")
+  }
+  mt <- regexpr("kind='quantile-([0-9\\.]+)'", line)
+  if (mt > 0) {
+    val  <- regmatches(line, mt)
+    qval <- sub("kind='quantile-", "", val)
+    qval <- sub("'", "", qval)
+    return(suppressWarnings(as.numeric(qval)))
+  }
+  return(NA)
+}
+
+
+#' @title Extract Investigation Time from OpenQuake Header
+#'
+#' @description
+#' Parses a header line (e.g. from an OpenQuake hazard CSV) for `investigation_time=XX.xx`.
+#'
+#' @param line Character string (e.g. the first line of the CSV).
+#'
+#' @return A numeric value of the investigation time if found, otherwise NA_real_.
+#'
+#' @keywords internal
+#' @export
+.extractInvestigationTime <- function(line) {
+  mt <- regexpr("investigation_time=([0-9\\.]+)", line)
+  if (mt > 0) {
+    val <- regmatches(line, mt)
+    num <- sub("investigation_time=", "", val)
+    return(as.numeric(num))
+  }
+  return(NA_real_)
+}
+
+
+#' @title Extract Tn from OpenQuake Header
+#'
+#' @description
+#' Detects `imt='PGA'`, `imt='PGV'`, or `imt='SA(...)'` in a header line
+#' to determine the spectral period, with 0 for PGA and -1 for PGV.
+#'
+#' @param line Character string from the CSV header.
+#'
+#' @return Numeric Tn in seconds, 0 (PGA) if `imt='PGA'`, -1 if `imt='PGV'`, or NA if not found.
+#'
+#' @keywords internal
+#' @export
+.extractTnFromHeader <- function(line) {
+  if (grepl("imt='PGA'", line)) {
+    return(0)
+  }
+  if (grepl("imt='PGV'", line)) {
+    return(-1)
+  }
+  mt <- regexpr("imt='SA\\(([0-9\\.]+)\\)'", line)
+  if (mt > 0) {
+    val <- regmatches(line, mt)
+    # e.g. "imt='SA(0.12)'"
+    num <- sub("imt='SA\\(", "", val)
+    num <- sub("\\)'", "", num)
+    return(as.numeric(num))
+  }
+  return(NA_real_)
+}
+
+#' @title Parse UHS Column Name (Internal)
+#'
+#' @description
+#' A helper that splits a column name like `0.095160~PGA` or `0.048770~SA(0.2)`
+#' into numeric rate and Tn.
+#'
+#' @param tag Character, e.g. `"0.095160~SA(0.2)"`.
+#' @return A two-element list with `(rate, Tn)`. Tn=0 if it detects "PGA."
+#'
+#' @keywords internal
+#' @export
+.parseUHScolumn <- function(tag) {
+  parts <- strsplit(tag, "~")[[1]]
+  if (length(parts) < 2) return(list(NA_real_, NA_real_))
+
+  rate_str <- parts[1]
+  spec_str <- parts[2]
+
+  # parse rate
+  rate_val <- suppressWarnings(as.numeric(rate_str))
+  if (grepl("PGA", spec_str, ignore.case=TRUE)) {
+    return(list(rate_val, 0))
+  }
+  mt <- regexpr("SA\\(([0-9\\.]+)\\)", spec_str)
+  if (mt > 0) {
+    val <- regmatches(spec_str, mt)
+    tn_str <- sub("SA\\(", "", val)
+    tn_str <- sub("\\)", "", tn_str)
+    return(list(rate_val, as.numeric(tn_str)))
+  }
+  return(list(rate_val, NA_real_))
+}
 #' @noRd
-#'
-#'
-
-
-
 .find <- function(V, X) {
   # Ensure V is sorted
   V <- sort(unique(V))
@@ -47,3 +154,96 @@
   return(results)
 }
 
+
+#' @title Build Param-Based Hazard
+#' @description Creates new hazard rows from fitted coefficients (a,b,c).
+#' @noRd
+buildParamHaz <- function(fitDT, AEPTable) {
+  # Example: build param-based hazard expansions for TR=100..10000
+  ITo <- unique(AEPTable$ITo)[1]
+  TRseq <- seq(100,10000,25)
+  fitDT[
+    ,
+    {
+      Sa_calc  <- exp(a + b*log(TRseq) + c*(1/TRseq))
+      AEP_approx<- 1 / TRseq
+      POE_approx<- 1 - exp(-ITo*(1/TRseq))
+      data.table(
+        TR=TRseq, Sa=Sa_calc, AEP=AEP_approx,
+        POE=POE_approx, ITo=ITo
+      )
+    },
+    by=.(lat, lon, depth, p, Tn, a, b, c, sdLnA, R2, MSE, RMSE, fit)
+  ]
+}
+
+
+#' @noRd
+buildParamUHS <- function(fitDT, AEPTable) {
+  # Example: build param-based UHS for some typical TR
+  ITo <- unique(AEPTable$ITo)[1]
+  TRo <- c(seq(100,10000,25), 475,975,2475,5000,10000)
+  TRo <- unique(TRo)
+  fitDT[
+    ,
+    {
+      Sa_calc  <- exp(a + b*log(TRo) + c*(1/TRo))
+      AEP_approx<- 1 / TRo
+      POE_approx<- 1 - exp(-ITo*(1/TRo))
+      data.table(
+        TR=TRo, Sa=Sa_calc, AEP=AEP_approx,
+        POE=POE_approx, ITo=ITo
+      )
+    },
+    by=.(lat, lon, depth, p, Tn)
+  ]
+}
+
+#' @noRd
+applySiteAmp <- function(dt, vs30vec, vref, quantAF) {
+  # dt is either AEPTable or UHSTable
+  # For each vs30, call dsra::fitModel.AF.TR
+  # We assume there's a Tn=0 => PGA in dt or not
+  resAF <- data.table()
+  # group by lat, lon, depth, p, Tn
+  grouping <- intersect(c("lat","lon","depth","p","Tn"), names(dt))
+
+  for (Vs in vs30vec) {
+    # Must define or merge a "PGA" col if Tn=0 is present
+    # e.g. we can do a self-join. This is the same approach you had:
+    pgaKey <- dt[Tn==0, .(PGA=Sa), by=setdiff(grouping, "Tn")]
+    tmp    <- merge(dt, pgaKey, by=setdiff(grouping, "Tn"), all.x=TRUE)
+
+    # Then get AF
+    AFdt <- tmp[
+      ,
+      dsra::fitModel.AF.TR(
+        .x   = .SD,
+        pga  = PGA,
+        q    = quantAF,
+        Tn   = Tn,
+        vs30 = Vs,
+        vref = vref
+      ),
+      by=grouping
+    ]
+    resAF <- rbind(resAF, AFdt, fill=TRUE)
+  }
+  return(resAF)
+}
+
+#' @noRd
+mergeAF <- function(dt, AFdt) {
+  # Merge the AF factor back to multiply Sa
+  keepC <- c("Vref","Vs30","lat","lon","depth","p","Tn","AF","sdLnAF","PGA")
+  AFuniq <- unique(AFdt[, ..keepC])
+  joinC  <- intersect(names(dt), names(AFuniq))
+  dt2 <- AFuniq[dt, on=joinC][
+    ,
+    `:=`(
+      Sa      = AF * Sa,
+      siteAmp = TRUE
+    )
+  ]
+  dt2
+}

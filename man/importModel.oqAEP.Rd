@@ -2,18 +2,30 @@
 % Please edit documentation in R/importModel.oqAEP.R
 \name{importModel.oqAEP}
 \alias{importModel.oqAEP}
-\title{Import Annual Exceedance Probabiliies (AEP) from openquake zip files.}
+\title{Import AEP (Hazard Curves) from OpenQuake Outputs}
 \usage{
 importModel.oqAEP(path, vref)
 }
 \arguments{
-\item{path}{character. Path to the folder containing the hazard and quantile curves}
+\item{path}{Character. Path to the folder containing the .zip files.}
 
-\item{vref}{numeric. Reference Vs30 in m/s}
+\item{vref}{Numeric. Reference Vs30 in m/s (not mandatory for reading, just stored or checked).}
 }
 \value{
-A data.table with the following columns:
+A data.table with columns:
+\itemize{
+\item \strong{lon, lat, depth} (if depth is in the CSV)
+\item \strong{Tn} (period in seconds; 0 for PGA, -1 for PGV if present)
+\item \strong{p} (quantile or "mean")
+\item \strong{Sa} (spectral acceleration level in g, from "poe-...")
+\item \strong{POE} (probability of exceedance)
+\item \strong{AEP} (annual exceedance probability = -log(1-POE)/ITo)
+\item \strong{TR} (return period = -ITo/log(1-POE))
+\item \strong{ITo} (investigation time extracted from header)
+}
 }
 \description{
-Import Annual Exceedance Probabiliies (AEP) from openquake zip files.
+Reads one or more \verb{*.zip} archives in \code{path}, unzips them into a temporary
+subfolder, looks for files named \code{"hazard_curve*"} or \code{"quantile_curve*"},
+parses, and returns a data.table of \verb{(lon, lat, depth, Tn, p, Sa, POE, AEP, TR)}.
 }

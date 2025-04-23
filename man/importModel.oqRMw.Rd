@@ -2,20 +2,28 @@
 % Please edit documentation in R/importModel.oqRMw.R
 \name{importModel.oqRMw}
 \alias{importModel.oqRMw}
-\title{Import disaggregation hazard (R-MW-p) from openquake}
+\title{Import Disaggregation (R-Mw-p) from OpenQuake}
 \usage{
 importModel.oqRMw(path, ITo, vref)
 }
 \arguments{
-\item{path}{Path to the folder containing the hazard and quantile curves}
+\item{path}{Character. Path to the folder containing .zip with disagg outputs.}
 
-\item{ITo}{Numeric. Investigation Time}
+\item{ITo}{Numeric. Investigation time, e.g. 50.}
 
-\item{vref}{Numeric. Reference Vs30 in m/s}
+\item{vref}{Numeric. Reference Vs30 in m/s (not required, just for logging).}
 }
 \value{
-A data.table with the following columns:
+\code{data.table} or \code{NULL} if no valid files are found.
 }
 \description{
-Import disaggregation hazard (R-MW-p) from openquake
+Reads one or more \code{.zip} archives in \code{path}, unzips them, and then looks
+for files named like \code{"Mag_Dist"} (but not \code{"TRT"}). If a "-mean" file exists,
+that one is used. The data is returned with columns:
+\itemize{
+\item \strong{Mw, R, POE}
+\item \strong{AEP, TR}
+\item \strong{Tn} (parsed from \code{imt}, e.g. "Sa(0.0)"),
+\item \strong{p} (renamed from "mean" or "rlz")
+}
 }

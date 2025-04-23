@@ -2,24 +2,49 @@
 % Please edit documentation in R/buildGMDP.R
 \name{buildGMDP}
 \alias{buildGMDP}
-\title{Title}
+\title{Build Ground-Motion Data Products}
 \usage{
-buildGMDP(path, IDo = "00000000", engine = "openquake", vs30 = NULL, vref)
+buildGMDP(
+  path,
+  vref,
+  vs30 = NULL,
+  IDo = "gmdp",
+  param = TRUE,
+  quantile_AF = "mean",
+  TRmin = 100,
+  TRmax = 10000
+)
 }
 \arguments{
-\item{path}{character}
+\item{path}{Character. Path to folder containing OQ .zip outputs.}
 
-\item{IDo}{character Output IDo}
+\item{vref}{Numeric. Reference Vs30 (e.g. 760). If site amp is desired, must be 760 or 3000.}
 
-\item{engine}{character c("openquake","user")}
+\item{vs30}{Numeric vector of target site classes. If non-empty and \code{vref \%in\% c(760,3000)},
+site amplification is applied.}
 
-\item{vs30}{numeric Vs30 Step}
+\item{IDo}{Character. A scenario ID label (default "gmdp").}
 
-\item{vref}{Vs30 in m/s}
+\item{param}{Logical. If TRUE, fit parametric model and produce new/smoothed hazard + UHS.}
+
+\item{quantile_AF}{Character or numeric. Which quantile or "mean" for site amp.}
+
+\item{TRmin}{Numeric. Min TR bound for param fitting.}
+
+\item{TRmax}{Numeric. Max TR bound for param fitting.}
 }
 \value{
-list
+A list with:
+\itemize{
+\item \strong{AEPTable}: hazard data (original + param-based if any) with site amp if applied
+\item \strong{UHSTable}: UHS data (original + param-based) with site amp if applied
+\item \strong{RMwTable}: disaggregation data if found, else \code{NULL}
+\item \strong{SaTRmodel}: param model results (if \code{param=TRUE})
+\item \strong{AFmodel_AEP}, \strong{AFmodel_UHS}: site amp factors if any
+}
 }
 \description{
-Title
+Reads OpenQuake outputs (hazard curves, direct UHS, disagg if found),
+optionally fits a parametric Sa-TR model, optionally applies site amplification,
+and returns final tables with minimal ephemeral variables.
 }
