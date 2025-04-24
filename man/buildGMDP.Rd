@@ -16,27 +16,24 @@ buildGMDP(
 )
 }
 \arguments{
-\item{path}{Character. Folder with OQ outputs}
+\item{path}{Folder with OQ outputs}
 
-\item{vref}{Numeric reference Vs30 used in OQ}
+\item{vref}{Numeric reference Vs30}
 
-\item{vs30}{Numeric vector. If given, site amp is done for each Vs30}
+\item{vs30}{Numeric vector for site amplification}
 
-\item{IDo}{Character label (ID) in final tables}
+\item{IDo}{Character label}
 
-\item{param}{Logical. If \code{TRUE}, fit param expansions from hazard}
+\item{param}{Logical (if TRUE => param expansions)}
 
-\item{quantile_AF}{Site amp quantile factor}
+\item{quantile_AF}{Amp quantile}
 
-\item{TRmin, TRmax}{Param expansion bounds}
+\item{TRmin, TRmax}{Param expansions range}
 }
 \value{
-A list with \code{(AEPTable, UHSTable, SaTRmodel, AFmodel_AEP, AFmodel_UHS)}
+list(AEPTable, UHSTable, SaTRmodel, AFmodel_AEP, AFmodel_UHS)
 }
 \description{
-Reads hazard (AEP) and UHS CSV/zip from OpenQuake in \code{path}, optionally
-does param expansions (\code{param=TRUE}), and applies site amplification
-for each vs30 in \code{vs30} if \code{vref \%in\% c(760,3000)}.
-Returns final \code{AEPTable}, \code{UHSTable}, \code{SaTRmodel},
-and site-amp info.
+This is the patched version replicating the old code's final columns
+with no fill=TRUE merges and guaranteed "PGA" from Tn=0.
 }

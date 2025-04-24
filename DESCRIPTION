@@ -11,8 +11,6 @@ Roxygen: list(markdown = TRUE)
 Imports: 
     data.table,
     epoxy,
-    stringr,
-    readxl,
     stats,   
     randomForest,
     rpart,
