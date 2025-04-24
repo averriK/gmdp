@@ -24,7 +24,7 @@ buildGMDP <- function(path,
                       quantile_AF = "mean",
                       param       = FALSE)
 {
-  on.exit(expr={rm(list=ls())}, add=TRUE)
+  on.exit(expr={rm(list=ls())}, add=TRUE) # your original choice, though usually not recommended
   . <- NULL
   AF_q_TARGET <- quantile_AF
 
@@ -60,12 +60,7 @@ buildGMDP <- function(path,
   SaTRmodel <- data.table()
   if (param) {
     message("> expansions => param => try fitModel.Sa.TR")
-    # group by (p,Tn) ignoring lat/lon
-    SaTRmodel <- AEP_in[
-      ,
-      fitModel.Sa.TR(.SD, TRmin=100, TRmax=10000),
-      by=.(p,Tn)
-    ]
+    SaTRmodel <- AEP_in[ , fitModel.Sa.TR(.SD, TRmin=100, TRmax=10000), by=.(p,Tn)]
     if (!is.null(SaTRmodel) && nrow(SaTRmodel)) {
       message("> param expansions => nrow(SaTRmodel)=", nrow(SaTRmodel))
     } else {
@@ -77,24 +72,19 @@ buildGMDP <- function(path,
   # (3) Build param-based UHS or read UHS
   UHS_in <- data.table()
   if (param && nrow(SaTRmodel)) {
-    # manual expansions => no meltdown
     message("> param=TRUE => manual expansions => no meltdown")
-    S1 <- seq(100,10000,25)
-    S2 <- c(475,500,975,1000,2000,2475,5000,10000)
-    TRo <- sort(unique(c(S1,S2)))
-    # produce expansions
-    # a,b,c => from SaTRmodel. We do bracket
-    # if we want lat/lon => reintroduce them, etc.
-
-    # We'll guess an ITo from AEP_in
+    S1 <- seq(100, 10000, 25)
+    S2 <- c(475, 500, 975, 1000, 2000, 2475, 2500,5000, 9975, 10000)
+    TRo <- sort(unique(c(S1, S2)))
     ITo_val <- unique(AEP_in$ITo)[1]
     if (is.na(ITo_val)) ITo_val <- 50
 
+    # We'll rely on data.table automatically appending p,Tn,a,b,c,sdLnA from "by=..."
+    # to avoid duplicates. So we do NOT explicitly store p=Tn=... inside the data.table(...) call.
     UHS_in <- SaTRmodel[
       ,
       {
-        if (is.na(a)||is.na(b)||is.na(c)) {
-          # skip
+        if (is.na(a) || is.na(b) || is.na(c)) {
           return(data.table())
         }
         Sa_calc <- exp(a + b*log(TRo) + c*(1/TRo))
@@ -103,61 +93,47 @@ buildGMDP <- function(path,
           TR  = TRo,
           Sa  = Sa_calc,
           AEP = 1/TRo,
-          POE = 1 - exp(-ITo_val*(1/TRo)),
-          p   = p,
-          Tn  = Tn,
-          # store param columns => we can remove them
-          a=a,b=b,c=c,sdLnA=sdLnA
+          POE = 1 - exp(-ITo_val*(1/TRo))
+          # p, Tn, a, b, c, sdLnA come from the grouping, no need to re-add them
         )
       },
-      by=.(p,Tn,a,b,c,sdLnA)
+      by = .(p,Tn,a,b,c,sdLnA)  # grouping
     ]
-    # drop param columns
+
+    # Now remove the param columns
     dropCols <- c("a","b","c","sdLnA")
     dropCols <- intersect(dropCols, names(UHS_in))
-    if (length(dropCols)) UHS_in[, (dropCols) := NULL]
+    if (length(dropCols)) {
+      UHS_in[, (dropCols) := NULL]
+    }
+
+    # Also check for any accidental duplicate columns (p, p.1, etc.)
+    # This is a safe check to remove suffix .1 columns
+    dupCols <- grep("\\.1$", names(UHS_in), value=TRUE)
+    if (length(dupCols)) UHS_in[, (dupCols) := NULL]
 
   } else if (param) {
     message("> param=TRUE => no SaTRmodel => empty UHS_in")
   } else {
-    # param=FALSE => read as-is
     message("> param=FALSE => read 'as-is' UHS from openquake")
     UHS_in <- importModel.oqUHS(TEMP)
-    # if none => empty
   }
 
   # Tag them with ID, AF=1, etc.
   if (nrow(UHS_in)) {
     UHS_in[, `:=`(ID=IDo, AF=1, Vref=vref)]
   }
-  # AEP_in => if your old code used ITo, keep it. If UHS uses IT, keep that.
-  # We'll keep AEP with "ITo" for old code
+  # AEP_in => keep "ITo" for old code
   setnames(AEP_in, old="IT", new="ITo", skip_absent=TRUE)
   AEP_in[, `:=`(ID=IDo, AF=1, Vref=vref)]
 
-  # (4) define PGA from Tn== Tn_PGA => no merges => do row approach or minimal approach
+  # (4) define PGA from Tn== Tn_PGA (vectorized ifelse)
   message("> define PGA from Tn_PGA=", Tn_PGA)
   if (nrow(UHS_in)) {
-    # old code => we found a subset => Tn==Tn_PGA => store => reorder
-    # or do a small join
-    # We'll do minimal approach => a bracket to define:
-    # "peakVal = UHS_in[Tn==Tn_PGA, Sa] for each row"? That's tricky. We might do a partial approach
-    # If your old code merges => user doesn't want merges => let's do a row approach if Tn is consistent.
-    # or let's do a small approach => if Tn==Tn_PGA => define PGA=Sa, else keep PGA as-is
-    # your old code might have done merges. We'll do an in-place logic:
-    UHS_in[, PGA := {
-      # define from Tn= Tn_PGA
-      if (Tn==Tn_PGA) Sa else NA_real_
-    }, by=.(p,TR)]
-    # then fill down if you want?
-    # or do partial approach
-    # We'll replicate simpler approach => if Tn!=Tn_PGA => leave PGA= NA
-    # up to you
+    UHS_in[, PGA := ifelse(Tn == Tn_PGA, Sa, NA_real_)]
   }
   if (nrow(AEP_in)) {
-    # similarly if Tn==Tn_PGA => PGA=Sa
-    # new code => old code used merges => we do a simpler approach:
-    AEP_in[, PGA := ifelse(Tn==Tn_PGA, Sa, NA_real_)]
+    AEP_in[, PGA := ifelse(Tn == Tn_PGA, Sa, NA_real_)]
   }
 
   ##### (5) Rbind site amp => no merges
@@ -182,7 +158,6 @@ buildGMDP <- function(path,
     }
     message("> Will produce blocks for each Vs in vs30: ", paste(vs30, collapse=", "))
     for (Vs in vs30) {
-      # copy
       tmpUHS <- copy(UHS_in)
       tmpAEP <- copy(AEP_in)
 
@@ -195,13 +170,13 @@ buildGMDP <- function(path,
         ]
         AFmodel_UHS <- rbind(AFmodel_UHS, AUXu, fill=TRUE)
         setorder(tmpUHS, p,Tn)
-        setorder(AUXu,  p,Tn)
-        if (nrow(tmpUHS)==nrow(AUXu)) {
-          tmpUHS[, Sa   := Sa* AUXu$AF]
-          tmpUHS[, PGA  := PGA* AUXu$AF]
-          tmpUHS[, AF   := AUXu$AF]
+        setorder(AUXu, p,Tn)
+        if (nrow(tmpUHS) == nrow(AUXu)) {
+          tmpUHS[, Sa     := Sa * AUXu$AF]
+          tmpUHS[, PGA    := PGA * AUXu$AF]
+          tmpUHS[, AF     := AUXu$AF]
           tmpUHS[, sdLnAF := AUXu$sdLnAF]
-          tmpUHS[, Vs30 := Vs]
+          tmpUHS[, Vs30   := Vs]
         } else {
           warning("UHSTable row mismatch => site amp skip.")
         }
@@ -216,11 +191,11 @@ buildGMDP <- function(path,
         setorder(tmpAEP, p,Tn)
         setorder(AUXa,  p,Tn)
         if (nrow(tmpAEP)==nrow(AUXa)) {
-          tmpAEP[, Sa   := Sa* AUXa$AF]
-          tmpAEP[, PGA  := PGA* AUXa$AF]
-          tmpAEP[, AF   := AUXa$AF]
+          tmpAEP[, Sa     := Sa * AUXa$AF]
+          tmpAEP[, PGA    := PGA * AUXa$AF]
+          tmpAEP[, AF     := AUXa$AF]
           tmpAEP[, sdLnAF := AUXa$sdLnAF]
-          tmpAEP[, Vs30 := Vs]
+          tmpAEP[, Vs30   := Vs]
         } else {
           warning("AEP row mismatch => site amp skip.")
         }

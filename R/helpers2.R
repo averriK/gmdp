@@ -1,3 +1,8 @@
+
+##############################################################################
+# Helpers:
+##############################################################################
+
 importModel.oqUHS <- function(path) {
   if (!dir.exists(path)) stop("Path does not exist: ", path)
   tmp_dir <- file.path(path, paste0(".temp_oqUHS_", as.integer(Sys.time())))
@@ -34,7 +39,6 @@ importModel.oqUHS <- function(path) {
     setnames(dt_raw, col_names)
     dt_raw <- dt_raw[-1]
 
-    # drop lat/lon/depth if not wanted
     dropCols <- intersect(c("lat","lon","depth"), col_names)
     keepCols <- setdiff(col_names, dropCols)
     dt_raw <- dt_raw[, ..keepCols]
@@ -52,7 +56,6 @@ importModel.oqUHS <- function(path) {
     )
     dt_long[, Sa := as.numeric(Sa)]
 
-    # parse (POE,Tn) => safeParseUHS
     parsed <- safeParseUHS(dt_long$col_label)
     dt_long[, `:=`(POE=parsed[[1]], Tn_m=parsed[[2]])]
     dt_long[, col_label := NULL]
@@ -66,13 +69,11 @@ importModel.oqUHS <- function(path) {
       dt_long[, `:=`(AEP=NA_real_, TR=NA_real_)]
     }
 
-    # if no Tn in ID, rename Tn_m => Tn
     if (!"Tn" %in% names(dt_long)) {
       setnames(dt_long, "Tn_m", "Tn")
     } else {
       dt_long[, Tn_m := NULL]
     }
-    # if no p in ID, set from p_val
     if (!"p" %in% names(dt_long)) {
       dt_long[, p := p_val]
     }
@@ -101,7 +102,6 @@ importModel.oqAEP <- function(path, vref) {
   }
   dir.create(tmp_dir, showWarnings=FALSE)
 
-  # Unzip
   zip_files <- list.files(path, pattern="\\.zip$", full.names=TRUE)
   if (length(zip_files)) {
     for (zf in zip_files) {
@@ -137,14 +137,11 @@ importModel.oqAEP <- function(path, vref) {
     setnames(dt_raw, col_names)
     dt_raw <- dt_raw[-1]
 
-    # possibly drop lat/lon/depth
     dropCols <- intersect(c("lat","lon","depth"), col_names)
     keepCols <- setdiff(col_names, dropCols)
     dt_raw <- dt_raw[, ..keepCols]
 
-    # measure => columns matching ^poe-
     measure_cols <- grep("^poe-[0-9\\.]+$", keepCols, value=TRUE)
-    # ID => everything else
     id_cols <- setdiff(keepCols, measure_cols)
 
     dt_long <- melt(
@@ -168,11 +165,9 @@ importModel.oqAEP <- function(path, vref) {
       dt_long[, `:=`(AEP=NA_real_, TR=NA_real_)]
     }
 
-    # if no Tn col => set from TnVal
     if (!"Tn" %in% names(dt_long)) {
       dt_long[, Tn := TnVal]
     }
-    # if no p => set from p_val
     if (!"p" %in% names(dt_long)) {
       dt_long[, p := p_val]
     }
@@ -191,7 +186,6 @@ importModel.oqAEP <- function(path, vref) {
 
   return(DT[])
 }
-
 
 
 importModel.oqRMw <- function(path, ITo, vref) {
@@ -213,7 +207,6 @@ importModel.oqRMw <- function(path, ITo, vref) {
   }
   search_dir <- if (length(zip_files)) tmp_dir else path
 
-  # find Mag_Dist (not TRT)
   all_files <- list.files(search_dir, pattern="Mag_Dist", full.names=TRUE)
   all_files <- all_files[!grepl("TRT", all_files)]
   if (!length(all_files)) {
@@ -229,12 +222,8 @@ importModel.oqRMw <- function(path, ITo, vref) {
   DHT <- data.table()
   for (f_ in all_files) {
     meta_line <- tryCatch(readLines(f_, n=1L), error=function(e) "")
-    # if you want lat/lon from meta_line, parse here
-
-    dt_raw <- tryCatch(
-      data.table::fread(f_, skip=1, header=TRUE, blank.lines.skip=TRUE),
-      error=function(e) NULL
-    )
+    dt_raw <- tryCatch(data.table::fread(f_, skip=1, header=TRUE, blank.lines.skip=TRUE),
+                       error=function(e) NULL)
     if (is.null(dt_raw) || !nrow(dt_raw)) {
       next
     }
@@ -249,17 +238,12 @@ importModel.oqRMw <- function(path, ITo, vref) {
     if ("iml" %in% names(dt_raw)) {
       dt_raw[, iml := NULL]
     }
-
-    # rename (rlz|mean)->p
     rlz_col <- grep("rlz|mean", names(dt_raw), value=TRUE)
     if (length(rlz_col)==1) {
       setnames(dt_raw, old=rlz_col, new="p")
     } else {
-      # skip file if no single p col
       next
     }
-
-    # convert "imt" => Tn
     dt_raw[imt=="PGA", imt:="Sa(0.0)"]
     dt_raw[, Tn := stringr::str_extract(imt, "(?<=\\()\\d+\\.*\\d*(?=\\))")]
     dt_raw[, Tn := as.numeric(Tn)]
@@ -275,7 +259,6 @@ importModel.oqRMw <- function(path, ITo, vref) {
     message("No valid disagg data found.")
     return(NULL)
   }
-  # remove duplicates if desired
   DHT <- unique(DHT)
   return(DHT[])
 }
@@ -292,7 +275,6 @@ importModel.userAEP <- function(path = NULL, filename = "AEP.xlsx") {
   }
 
   sheets_all <- readxl::excel_sheets(file_xlsx)
-  # We expect sheet names like "p=0.16", "p=mean", etc.
   sheets_p <- grep(pattern = "^p=", sheets_all, value = TRUE)
   if (length(sheets_p) == 0) {
     stop("No sheets named 'p=...' found in: ", file_xlsx)
@@ -300,14 +282,11 @@ importModel.userAEP <- function(path = NULL, filename = "AEP.xlsx") {
 
   AT <- data.table()
   for (SHEET in sheets_p) {
-    dt_sheet <- data.table::as.data.table(
-      readxl::read_xlsx(file_xlsx, sheet = SHEET)
-    )
+    dt_sheet <- data.table::as.data.table(readxl::read_xlsx(file_xlsx, sheet = SHEET))
     if (!("Tn" %in% names(dt_sheet))) {
       stop("Missing column 'Tn' in sheet '", SHEET, "'.")
     }
 
-    # We'll assume all other columns besides Tn are "ground motion" columns
     id_var <- "Tn"
     measure_vars <- setdiff(names(dt_sheet), id_var)
     if (length(measure_vars) == 0) {
@@ -315,7 +294,6 @@ importModel.userAEP <- function(path = NULL, filename = "AEP.xlsx") {
       next
     }
 
-    # Reshape from wide to long
     aux <- melt(
       dt_sheet,
       id.vars = id_var,
@@ -326,33 +304,27 @@ importModel.userAEP <- function(path = NULL, filename = "AEP.xlsx") {
     )
     aux[, Sa := as.character(Sa)]
 
-    # parse the "p" from the sheet name, e.g. "p=0.16" -> 0.16
     po <- stringr::str_remove(SHEET, "p=")
     if (po != "mean") {
       po_num <- suppressWarnings(as.numeric(po))
       if (!is.na(po_num)) {
         po <- po_num
       }
-      # else it might remain a character if it's not numeric
     }
 
-    # Filter out non-positive AEP
     aux <- aux[AEP > 0]
-    # Convert Sa factor or string to numeric
     if (!is.numeric(aux$Sa)) {
-      # attempt to parse numeric from the factor/character
       aux[, Sa := suppressWarnings(as.numeric(as.character(Sa)))]
     }
 
     aux[, p := po]
-    aux[, IT := 50]   # default
-    aux[, POE := 1 - exp(-IT * AEP)] # exact relationship
+    aux[, IT := 50]
+    aux[, POE := 1 - exp(-IT * AEP)]
     aux[, TR := 1 / AEP]
 
     AT <- rbind(AT, aux, use.names = TRUE, fill = TRUE)
   }
 
-  # reorder columns
   col_order <- c("Tn","Sa","AEP","p","POE","TR","IT")
   col_order <- intersect(col_order, names(AT))
   setcolorder(AT, col_order)
