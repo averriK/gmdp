@@ -2,23 +2,27 @@
 % Please edit documentation in R/importModel.oqUHS.R
 \name{importModel.oqUHS}
 \alias{importModel.oqUHS}
-\title{Import UHS Curves from OpenQuake Outputs}
+\title{Import UHS (Minimal) from OpenQuake Outputs (Fixed)}
 \usage{
 importModel.oqUHS(path)
 }
 \arguments{
-\item{path}{Character. Directory with UHS csv or zip}
+\item{path}{Character. Folder with \code{uhs*.csv} or \code{uhs-csv.zip}.}
 }
 \value{
 A data.table with columns:
 \itemize{
 \item \strong{lon, lat, depth} (if depth is found)
-\item \strong{rate, Tn, Sa, p, ITo}
+\item \strong{Tn} (0 if "PGA", numeric if "SA(...)" parsed)
+\item \strong{Sa} (spectral acceleration from meltdown cell)
+\item \strong{p} (quantile or mean from the first-line metadata)
+\item \strong{ITo} (investigation_time from metadata)
 }
 }
 \description{
-Reads "uhs*.csv" or "uhs-csv.zip" from \code{path}, skipping the first line
-(metadata) and treating the second line as the column header. Then each
-column name like "0.095160~PGA" is melted, with "exceed_tag" parsed by
-\code{.parseUHScolumn()} => \verb{(rate, Tn)}.
+Reads one or more \code{uhs.*.csv} (or \code{uhs-csv.zip}) in \code{path}, skipping line #1
+(metadata => parse \code{p,ITo}), meltdown columns except \verb{(lon, lat[, depth])},
+parse Tn from something like \code{"0.095160~SA(0.2)"} (ignoring the numeric prefix),
+and returns columns \verb{(lon, lat, depth, Tn, Sa, p, ITo)}.
 }
+\keyword{internal}

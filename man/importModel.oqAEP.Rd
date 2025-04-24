@@ -2,28 +2,41 @@
 % Please edit documentation in R/importModel.oqAEP.R
 \name{importModel.oqAEP}
 \alias{importModel.oqAEP}
-\title{Import AEP (Hazard Curves) from OpenQuake}
+\title{Import AEP (Hazard Curves) from OpenQuake (Fixed)}
 \usage{
 importModel.oqAEP(path, vref)
 }
 \arguments{
-\item{path}{Character. Directory containing hazard_curve*.csv or .zip}
+\item{path}{Character. Folder with hazard_curve*, quantile_curve* CSV/zip.}
 
-\item{vref}{Numeric. Reference Vs30 in m/s (not strictly required, stored or logged)}
+\item{vref}{Numeric. Vs30 reference if needed (unused in meltdown).}
 }
 \value{
-data.table with columns:
+A data.table with columns:
 \itemize{
-\item \strong{lon, lat, depth} if present
-\item \strong{Sa, POE, AEP, TR, Tn, p, ITo}
+\item \strong{lon, lat, depth} (if depth col is in CSV)
+\item \strong{Tn} (0 for PGA, -1 for PGV, numeric if SA(...))
+\item \strong{p} (quantile or mean from the header)
+\item \strong{Sa} (spectral acceleration from \code{poe-xxx})
+\item \strong{POE} (probability of exceedance, numeric)
+\item \strong{AEP} (=-log(1-POE)/ITo), \strong{TR} (=-ITo/log(1-POE))
+\item \strong{ITo} (investigation_time)
 }
 }
 \description{
-Reads hazard-curve or quantile-curve CSV files (or .zip) from \code{path},
-skipping the first line (metadata) and treating the second line as column
-headers (to match old code). Melts columns like "poe-0.001" => (Sa=0.001, POE).
-Then computes AEP=-log(1-POE)/ITo and TR=-ITo/log(1-POE).
-
-It returns a table with potential duplicates if the same site is repeated
-multiple times. We also do \code{unique()} so each row is unique.
+Reads hazard-curve or quantile-curve CSVs from \code{path} (or .zip) using a
+minimal meltdown approach. For each file:
+\enumerate{
+\item Parses the first line for \code{p} (quantile or mean) and
+\code{ITo} (investigation_time). Possibly \code{Tn} from
+\code{imt='...'}. If multiple Tn, each file has its own Tn.
+\item Skips that line, reads data with \code{header=FALSE} so the second
+line is columns.
+\item Identifies columns matching \code{poe-xxx}, melts them to long
+format => \code{POE} (must be converted to numeric).
+\item Filters out \code{POE>=1}, if any.
+\item If \code{ITo>0}, computes \code{AEP=-log(1-POE)/ITo} and
+\code{TR=-ITo/log(1-POE)}.
+\item Stores \code{(lon, lat, depth, Tn, p, Sa, POE, AEP, TR, ITo)}.
+}
 }

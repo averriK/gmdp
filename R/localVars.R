@@ -1,5 +1,7 @@
 utils::globalVariables(c("ValidSands","ValidGravels","ValidSilts","ValidClays","ValidOrganic","ValidFines","ValidCoarse","ValidUSCS","ValidGroups","SiteTable","VoidRatiosUSCS","RelativeDensityRanges","UnitWeightRanges","ParticleSize","USCS","ShearModelParameters","ShearModelParameters","CylinderRoots"))
 utils::globalVariables(c("poe_label", "exceed_tag", "."))
+utils::globalVariables(c("R2", "MSE", "RMSE", "fit", "..keepFound","..keepC"))
+
 PGV <- depth <-  lat <-  lon <- NULL
 
 ID <- ..COLS <- COLS <- XCOLS <- YCOL <- NULL

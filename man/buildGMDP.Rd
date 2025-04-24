@@ -9,42 +9,33 @@ buildGMDP(
   vref,
   vs30 = NULL,
   IDo = "gmdp",
-  param = TRUE,
+  param = FALSE,
   quantile_AF = "mean",
   TRmin = 100,
   TRmax = 10000
 )
 }
 \arguments{
-\item{path}{Character. Path to folder containing OQ .zip outputs.}
+\item{path}{Character. Folder with OQ hazard & UHS CSV/zip}
 
-\item{vref}{Numeric. Reference Vs30 (e.g. 760). If site amp is desired, must be 760 or 3000.}
+\item{vref}{Numeric. Reference Vs30}
 
-\item{vs30}{Numeric vector of target site classes. If non-empty and \code{vref \%in\% c(760,3000)},
-site amplification is applied.}
+\item{vs30}{Numeric vector. If not empty & vref in \{760,3000\}, site amp}
 
-\item{IDo}{Character. A scenario ID label (default "gmdp").}
+\item{IDo}{Character. Label}
 
-\item{param}{Logical. If TRUE, fit parametric model and produce new/smoothed hazard + UHS.}
+\item{param}{Logical. If TRUE => param expansions}
 
-\item{quantile_AF}{Character or numeric. Which quantile or "mean" for site amp.}
+\item{quantile_AF}{For site amp factor}
 
-\item{TRmin}{Numeric. Min TR bound for param fitting.}
-
-\item{TRmax}{Numeric. Max TR bound for param fitting.}
+\item{TRmin, TRmax}{Param-fitting bounds}
 }
 \value{
-A list with:
-\itemize{
-\item \strong{AEPTable}: hazard data (original + param-based if any) with site amp if applied
-\item \strong{UHSTable}: UHS data (original + param-based) with site amp if applied
-\item \strong{RMwTable}: disaggregation data if found, else \code{NULL}
-\item \strong{SaTRmodel}: param model results (if \code{param=TRUE})
-\item \strong{AFmodel_AEP}, \strong{AFmodel_UHS}: site amp factors if any
-}
+list with \code{AEPTable, UHSTable, SaTRmodel, AFmodel_AEP, AFmodel_UHS}
 }
 \description{
-Reads OpenQuake outputs (hazard curves, direct UHS, disagg if found),
-optionally fits a parametric Sa-TR model, optionally applies site amplification,
-and returns final tables with minimal ephemeral variables.
+Reads hazard curves via \code{importModel.oqAEP()} and direct UHS via \code{importModel.oqUHS()},
+optionally does param expansions (\code{buildParamHaz/buildParamUHS}) if \code{param=TRUE},
+optionally does site amplification (\code{applySiteAmp/mergeAF}) if \code{vs30} is given.
+Returns final tables. All internal helpers are defined below with \verb{@noRd}.
 }
