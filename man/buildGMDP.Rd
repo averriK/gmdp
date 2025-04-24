@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildGMDP.R
 \name{buildGMDP}
 \alias{buildGMDP}
-\title{Build Ground-Motion Data Products}
+\title{Build Ground-Motion Data Products (AEP & UHS) from OpenQuake}
 \usage{
 buildGMDP(
   path,
@@ -16,26 +16,27 @@ buildGMDP(
 )
 }
 \arguments{
-\item{path}{Character. Folder with OQ hazard & UHS CSV/zip}
+\item{path}{Character. Folder with OQ outputs}
 
-\item{vref}{Numeric. Reference Vs30}
+\item{vref}{Numeric reference Vs30 used in OQ}
 
-\item{vs30}{Numeric vector. If not empty & vref in \{760,3000\}, site amp}
+\item{vs30}{Numeric vector. If given, site amp is done for each Vs30}
 
-\item{IDo}{Character. Label}
+\item{IDo}{Character label (ID) in final tables}
 
-\item{param}{Logical. If TRUE => param expansions}
+\item{param}{Logical. If \code{TRUE}, fit param expansions from hazard}
 
-\item{quantile_AF}{For site amp factor}
+\item{quantile_AF}{Site amp quantile factor}
 
-\item{TRmin, TRmax}{Param-fitting bounds}
+\item{TRmin, TRmax}{Param expansion bounds}
 }
 \value{
-list with \code{AEPTable, UHSTable, SaTRmodel, AFmodel_AEP, AFmodel_UHS}
+A list with \code{(AEPTable, UHSTable, SaTRmodel, AFmodel_AEP, AFmodel_UHS)}
 }
 \description{
-Reads hazard curves via \code{importModel.oqAEP()} and direct UHS via \code{importModel.oqUHS()},
-optionally does param expansions (\code{buildParamHaz/buildParamUHS}) if \code{param=TRUE},
-optionally does site amplification (\code{applySiteAmp/mergeAF}) if \code{vs30} is given.
-Returns final tables. All internal helpers are defined below with \verb{@noRd}.
+Reads hazard (AEP) and UHS CSV/zip from OpenQuake in \code{path}, optionally
+does param expansions (\code{param=TRUE}), and applies site amplification
+for each vs30 in \code{vs30} if \code{vref \%in\% c(760,3000)}.
+Returns final \code{AEPTable}, \code{UHSTable}, \code{SaTRmodel},
+and site-amp info.
 }
