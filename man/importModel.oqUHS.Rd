@@ -2,32 +2,32 @@
 % Please edit documentation in R/importModel.oqUHS.R
 \name{importModel.oqUHS}
 \alias{importModel.oqUHS}
-\title{Import UHS from OpenQuake (Prefix=POE, Suffix=Tn) - Vectorized}
+\title{Import UHS from OpenQuake (Old-Style, Safe Loop)}
 \usage{
 importModel.oqUHS(path)
 }
 \arguments{
-\item{path}{Character. Folder with \code{uhs*.csv} or \code{uhs-csv.zip}.}
+\item{path}{Character. Directory with \code{uhs-csv.zip} or \code{uhs*.csv}.}
 }
 \value{
-A \code{data.table} with columns:
+A data.table with columns:
 \itemize{
-\item \strong{lon, lat, depth} if depth was in the CSV
-\item \strong{Tn} numeric if "SA(0.2)", 0 if "PGA"
-\item \strong{p} quantile or "mean" from the first-line metadata
-\item \strong{POE, AEP, TR, ITo} (as computed if \code{POE<1 && ITo>0})
-\item \strong{Sa} spectral acceleration from meltdown
+\item \strong{lon, lat, depth} if present
+\item \strong{Tn} numeric if "SA(0.xx)", 0 if "PGA"
+\item \strong{p} from the metadata
+\item \strong{POE, AEP, TR, ITo} if \code{ITo>0}
+\item \strong{Sa} meltdown cell
 }
 }
 \description{
-Reads one or more \code{uhs*.csv} or \code{uhs-csv.zip} from \code{path}, skipping line #1
+Reads \code{uhs*.csv} or \code{uhs-csv.zip} from \code{path}, skipping line #1
 (metadata => parse \code{p,ITo}). Melts wide->long on \verb{(lon, lat[, depth])}.
+Then, for each measure column name (like \code{"0.09516~SA(0.2)"}),
+we parse prefix => POE, suffix => Tn via a row-by-row safe loop (\code{safeParseUHS}).
 
-\strong{Interprets} the \strong{numeric prefix} before \code{"~"} in each column name as
-\code{POE} (Probability of Exceedance), and the \strong{suffix} as either
-\code{"PGA"} => Tn=0 or \code{"SA(0.2)"} => Tn=0.2, etc. Then the meltdown cell
-is \code{Sa}. If \code{POE<1 && ITo>0}, we compute \code{AEP=-log(1-POE)/ITo}
-and \code{TR=-ITo/log(1-POE)}. This matches your old code's logic that stores
-\verb{(TR, AEP, POE, Tn, Sa)}.
+If \code{POE<1 && ITo>0}, we compute \code{AEP=-log(1-POE)/ITo},
+\code{TR=-ITo/log(1-POE)}. The final columns are
+\code{(lon, lat, depth, Tn, p, POE, AEP, TR, ITo, Sa)}. Any row that fails
+parse or \code{prefix>=1} is dropped. This avoids substring errors in data.table.
 }
 \keyword{internal}
