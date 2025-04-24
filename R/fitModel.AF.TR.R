@@ -35,7 +35,7 @@ fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
       PGA=pga,
       Vref = vref,
       Vs30 = vref,
-      SID = Vs30toSID(vref),
+      # SID = Vs30toSID(vref),
       muLnPGA = 0,
       muL = 0,
       muI = 0,
@@ -45,8 +45,9 @@ fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
       sdL = 0,
       sdI = 0,
       sdNL = 0,
-      sdLnAF = 0,
-      SM = "openquake"
+      # SM = "openquake",
+      sdLnAF = 0
+
     )
     return(DT)
   }
@@ -225,7 +226,7 @@ fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
     PGA = pga,
     Vref = vref,
     Vs30 = vs30,
-    SID = Vs30toSID(vs30),
+    # SID = Vs30toSID(vs30),
     muLnPGA = muLnPGA,
     muL = muL,
     muI = muI,
@@ -235,8 +236,9 @@ fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
     sdL = sdL,
     sdI = sdI,
     sdNL = sdNL,
-    sdLnAF = sdLnAF,
-    SM = "gmdp"
+    # SM = "gmdp",
+    sdLnAF = sdLnAF
+
   )
 
   return(DT)

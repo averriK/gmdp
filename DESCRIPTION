@@ -12,6 +12,8 @@ Imports:
     data.table,
     epoxy,
     stats,   
+    readxl,
+    stringr,
     randomForest,
     rpart,
     utils

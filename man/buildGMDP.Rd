@@ -2,38 +2,37 @@
 % Please edit documentation in R/buildGMDP.R
 \name{buildGMDP}
 \alias{buildGMDP}
-\title{Build Ground-Motion Data Products (AEP & UHS) from OpenQuake}
+\title{Build Ground-Motion Data Products from OpenQuake}
 \usage{
 buildGMDP(
   path,
-  vref,
+  IDo = "00000000",
+  engine = "openquake",
   vs30 = NULL,
-  IDo = "gmdp",
-  param = FALSE,
+  vref,
   quantile_AF = "mean",
-  TRmin = 100,
-  TRmax = 10000
+  param = FALSE
 )
 }
 \arguments{
-\item{path}{Folder with OQ outputs}
+\item{path}{character. Path to the folder containing OQ hazard & UHS CSVs/zips}
 
-\item{vref}{Numeric reference Vs30}
+\item{IDo}{character Output ID label}
 
-\item{vs30}{Numeric vector for site amplification}
+\item{engine}{character c("openquake","user")}
 
-\item{IDo}{Character label}
+\item{vs30}{numeric. Vs30 steps}
 
-\item{param}{Logical (if TRUE => param expansions)}
+\item{vref}{numeric reference Vs30}
 
-\item{quantile_AF}{Amp quantile}
+\item{quantile_AF}{character. c("mean", 0.16, 0.50, 0.84)}
 
-\item{TRmin, TRmax}{Param expansions range}
+\item{param}{logical. If TRUE => do param expansions}
 }
 \value{
-list(AEPTable, UHSTable, SaTRmodel, AFmodel_AEP, AFmodel_UHS)
+A list of \code{(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)}
 }
 \description{
-This is the patched version replicating the old code's final columns
-with no fill=TRUE merges and guaranteed "PGA" from Tn=0.
+Replicates the old code logic but allows \code{param=FALSE} to skip param expansions.
+Always reads "as-is" UHS from CSV if present, so \code{UHSTable} is never empty.
 }

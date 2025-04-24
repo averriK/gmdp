@@ -14,7 +14,7 @@
 #' @import data.table
 #' @examples
 buildTable.Sa <- function(x, Tno, TRo, size = 12, po = NULL, engine = "flextable", Vs30o = NULL, tagUnits = TRUE) {
-    DT <- x[, .(Tn, TR, p, Sa, Vs30, Vref, SID)]
+    DT <- x[, .(Tn, TR, p, Sa, Vs30, Vref)]
 
     . <- NULL
     # browser()
