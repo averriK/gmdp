@@ -2,7 +2,7 @@
 % Please edit documentation in R/importModel.oqUHS.R
 \name{importModel.oqUHS}
 \alias{importModel.oqUHS}
-\title{Import UHS (Minimal) from OpenQuake Outputs (Fixed)}
+\title{Import UHS from OpenQuake (Prefix=POE, Suffix=Tn) - Vectorized}
 \usage{
 importModel.oqUHS(path)
 }
@@ -10,19 +10,24 @@ importModel.oqUHS(path)
 \item{path}{Character. Folder with \code{uhs*.csv} or \code{uhs-csv.zip}.}
 }
 \value{
-A data.table with columns:
+A \code{data.table} with columns:
 \itemize{
-\item \strong{lon, lat, depth} (if depth is found)
-\item \strong{Tn} (0 if "PGA", numeric if "SA(...)" parsed)
-\item \strong{Sa} (spectral acceleration from meltdown cell)
-\item \strong{p} (quantile or mean from the first-line metadata)
-\item \strong{ITo} (investigation_time from metadata)
+\item \strong{lon, lat, depth} if depth was in the CSV
+\item \strong{Tn} numeric if "SA(0.2)", 0 if "PGA"
+\item \strong{p} quantile or "mean" from the first-line metadata
+\item \strong{POE, AEP, TR, ITo} (as computed if \code{POE<1 && ITo>0})
+\item \strong{Sa} spectral acceleration from meltdown
 }
 }
 \description{
-Reads one or more \code{uhs.*.csv} (or \code{uhs-csv.zip}) in \code{path}, skipping line #1
-(metadata => parse \code{p,ITo}), meltdown columns except \verb{(lon, lat[, depth])},
-parse Tn from something like \code{"0.095160~SA(0.2)"} (ignoring the numeric prefix),
-and returns columns \verb{(lon, lat, depth, Tn, Sa, p, ITo)}.
+Reads one or more \code{uhs*.csv} or \code{uhs-csv.zip} from \code{path}, skipping line #1
+(metadata => parse \code{p,ITo}). Melts wide->long on \verb{(lon, lat[, depth])}.
+
+\strong{Interprets} the \strong{numeric prefix} before \code{"~"} in each column name as
+\code{POE} (Probability of Exceedance), and the \strong{suffix} as either
+\code{"PGA"} => Tn=0 or \code{"SA(0.2)"} => Tn=0.2, etc. Then the meltdown cell
+is \code{Sa}. If \code{POE<1 && ITo>0}, we compute \code{AEP=-log(1-POE)/ITo}
+and \code{TR=-ITo/log(1-POE)}. This matches your old code's logic that stores
+\verb{(TR, AEP, POE, Tn, Sa)}.
 }
 \keyword{internal}
