@@ -1,0 +1,361 @@
+importModel.oqUHS <- function(path) {
+  if (!dir.exists(path)) stop("Path does not exist: ", path)
+  tmp_dir <- file.path(path, paste0(".temp_oqUHS_", as.integer(Sys.time())))
+  if (dir.exists(tmp_dir)) {
+    unlink(tmp_dir, recursive=TRUE, force=TRUE)
+  }
+  dir.create(tmp_dir, showWarnings=FALSE)
+
+  zip_files <- list.files(path, pattern="uhs-csv\\.zip$", full.names=TRUE)
+  if (length(zip_files)) {
+    for (zf in zip_files) {
+      utils::unzip(zf, exdir=tmp_dir, junkpaths=TRUE)
+    }
+  }
+  search_dir <- if (length(zip_files)) tmp_dir else path
+  uhs_files <- list.files(search_dir, pattern="uhs.*\\.csv$", full.names=TRUE)
+  if (!length(uhs_files)) {
+    unlink(tmp_dir, recursive=TRUE, force=TRUE)
+    message("No UHS CSV files in: ", path)
+    return(data.table())
+  }
+
+  out_list <- list()
+  iCount   <- 0
+  for (f_ in uhs_files) {
+    header_line <- tryCatch(readLines(f_, n=1L), error=function(e)"")
+    p_val <- .extractQuantileFromHeader(header_line)
+    ITval <- .extractInvestigationTime(header_line)
+
+    dt_raw <- data.table::fread(f_, skip=1, header=FALSE, blank.lines.skip=TRUE)
+    if (!nrow(dt_raw)) next
+
+    col_names <- unlist(dt_raw[1,], use.names=FALSE)
+    setnames(dt_raw, col_names)
+    dt_raw <- dt_raw[-1]
+
+    # drop lat/lon/depth if not wanted
+    dropCols <- intersect(c("lat","lon","depth"), col_names)
+    keepCols <- setdiff(col_names, dropCols)
+    dt_raw <- dt_raw[, ..keepCols]
+
+    measure_cols <- grep("^[0-9\\.]+~", keepCols, value=TRUE)
+    id_cols <- setdiff(keepCols, measure_cols)
+
+    dt_long <- melt(
+      dt_raw,
+      id.vars=id_cols,
+      measure.vars=measure_cols,
+      variable.name="col_label",
+      value.name="Sa",
+      variable.factor=FALSE
+    )
+    dt_long[, Sa := as.numeric(Sa)]
+
+    # parse (POE,Tn) => safeParseUHS
+    parsed <- safeParseUHS(dt_long$col_label)
+    dt_long[, `:=`(POE=parsed[[1]], Tn_m=parsed[[2]])]
+    dt_long[, col_label := NULL]
+
+    dt_long <- dt_long[!is.na(POE) & !is.na(Tn_m) & POE<1]
+
+    if (!is.na(ITval) && ITval>0) {
+      dt_long[, AEP := -log(1 - POE)/ITval]
+      dt_long[, TR  := -ITval / log(1 - POE)]
+    } else {
+      dt_long[, `:=`(AEP=NA_real_, TR=NA_real_)]
+    }
+
+    # if no Tn in ID, rename Tn_m => Tn
+    if (!"Tn" %in% names(dt_long)) {
+      setnames(dt_long, "Tn_m", "Tn")
+    } else {
+      dt_long[, Tn_m := NULL]
+    }
+    # if no p in ID, set from p_val
+    if (!"p" %in% names(dt_long)) {
+      dt_long[, p := p_val]
+    }
+    dt_long[, IT := ITval]
+
+    out_list[[ iCount <- iCount+1 ]] <- dt_long
+  }
+
+  unlink(tmp_dir, recursive=TRUE, force=TRUE)
+  DT <- data.table::rbindlist(out_list, fill=TRUE, use.names=TRUE)
+  if (!nrow(DT)) return(DT)
+
+  final_cols <- c("p","Tn","POE","AEP","TR","IT","Sa")
+  keepC <- intersect(final_cols, names(DT))
+  setcolorder(DT, keepC)
+  return(DT[])
+}
+
+
+importModel.oqAEP <- function(path, vref) {
+  if (!dir.exists(path)) stop("Path does not exist: ", path)
+
+  tmp_dir <- file.path(path, paste0(".temp_oqAEP_", as.integer(Sys.time())))
+  if (dir.exists(tmp_dir)) {
+    unlink(tmp_dir, recursive=TRUE, force=TRUE)
+  }
+  dir.create(tmp_dir, showWarnings=FALSE)
+
+  # Unzip
+  zip_files <- list.files(path, pattern="\\.zip$", full.names=TRUE)
+  if (length(zip_files)) {
+    for (zf in zip_files) {
+      utils::unzip(zf, exdir=tmp_dir, junkpaths=TRUE)
+    }
+  }
+  search_dir <- if (length(zip_files)) tmp_dir else path
+
+  files_curves <- list.files(
+    search_dir,
+    pattern="(hazard_curve|quantile_curve).*\\.csv$",
+    full.names=TRUE
+  )
+  if (!length(files_curves)) {
+    unlink(tmp_dir, recursive=TRUE, force=TRUE)
+    message("No hazard_curve/quantile_curve CSV found in: ", path)
+    return(data.table())
+  }
+
+  out_list <- list()
+  iCount   <- 0
+
+  for (f_ in files_curves) {
+    line1 <- tryCatch(readLines(f_, n=1L), error=function(e)"")
+    p_val <- .extractQuantileFromHeader(line1)
+    ITo   <- .extractInvestigationTime(line1)
+    TnVal <- .extractTnFromHeader(line1)
+
+    dt_raw <- data.table::fread(f_, skip=1, header=FALSE, blank.lines.skip=TRUE)
+    if (!nrow(dt_raw)) next
+
+    col_names <- unlist(dt_raw[1,], use.names=FALSE)
+    setnames(dt_raw, col_names)
+    dt_raw <- dt_raw[-1]
+
+    # possibly drop lat/lon/depth
+    dropCols <- intersect(c("lat","lon","depth"), col_names)
+    keepCols <- setdiff(col_names, dropCols)
+    dt_raw <- dt_raw[, ..keepCols]
+
+    # measure => columns matching ^poe-
+    measure_cols <- grep("^poe-[0-9\\.]+$", keepCols, value=TRUE)
+    # ID => everything else
+    id_cols <- setdiff(keepCols, measure_cols)
+
+    dt_long <- melt(
+      dt_raw,
+      id.vars       = id_cols,
+      measure.vars  = measure_cols,
+      variable.name = "poe_label",
+      value.name    = "POE",
+      variable.factor=FALSE
+    )
+    dt_long[, POE := as.numeric(POE)]
+    dt_long[, Sa  := as.numeric(sub("poe-", "", poe_label))]
+    dt_long[, poe_label := NULL]
+
+    dt_long <- dt_long[!is.na(POE) & POE<1]
+
+    if (!is.na(ITo) && ITo>0) {
+      dt_long[, AEP := -log(1 - POE)/ITo]
+      dt_long[, TR  := -ITo / log(1 - POE)]
+    } else {
+      dt_long[, `:=`(AEP=NA_real_, TR=NA_real_)]
+    }
+
+    # if no Tn col => set from TnVal
+    if (!"Tn" %in% names(dt_long)) {
+      dt_long[, Tn := TnVal]
+    }
+    # if no p => set from p_val
+    if (!"p" %in% names(dt_long)) {
+      dt_long[, p := p_val]
+    }
+    dt_long[, ITo := ITo]
+
+    out_list[[ iCount <- iCount+1 ]] <- dt_long
+  }
+
+  unlink(tmp_dir, recursive=TRUE, force=TRUE)
+  DT <- data.table::rbindlist(out_list, fill=TRUE, use.names=TRUE)
+  if (!nrow(DT)) return(DT)
+
+  final_cols <- c("p","Tn","Sa","POE","AEP","TR","ITo")
+  keepC <- intersect(final_cols, names(DT))
+  setcolorder(DT, keepC)
+
+  return(DT[])
+}
+
+
+
+importModel.oqRMw <- function(path, ITo, vref) {
+  if (!dir.exists(path)) {
+    stop("Path does not exist: ", path)
+  }
+
+  tmp_dir <- file.path(path, paste0(".temp_oqRMw_", as.integer(Sys.time())))
+  if (dir.exists(tmp_dir)) {
+    unlink(tmp_dir, recursive=TRUE, force=TRUE)
+  }
+  dir.create(tmp_dir, showWarnings=FALSE)
+
+  zip_files <- list.files(path, pattern="\\.zip$", full.names=TRUE)
+  if (length(zip_files)) {
+    for (zf in zip_files) {
+      utils::unzip(zf, exdir=tmp_dir, junkpaths=TRUE)
+    }
+  }
+  search_dir <- if (length(zip_files)) tmp_dir else path
+
+  # find Mag_Dist (not TRT)
+  all_files <- list.files(search_dir, pattern="Mag_Dist", full.names=TRUE)
+  all_files <- all_files[!grepl("TRT", all_files)]
+  if (!length(all_files)) {
+    unlink(tmp_dir, recursive=TRUE, force=TRUE)
+    message("No 'Mag_Dist' files found in: ", path)
+    return(NULL)
+  }
+  mean_files <- grep("Mag_Dist-mean", all_files, value=TRUE)
+  if (length(mean_files)) {
+    all_files <- mean_files
+  }
+
+  DHT <- data.table()
+  for (f_ in all_files) {
+    meta_line <- tryCatch(readLines(f_, n=1L), error=function(e) "")
+    # if you want lat/lon from meta_line, parse here
+
+    dt_raw <- tryCatch(
+      data.table::fread(f_, skip=1, header=TRUE, blank.lines.skip=TRUE),
+      error=function(e) NULL
+    )
+    if (is.null(dt_raw) || !nrow(dt_raw)) {
+      next
+    }
+
+    required_cols <- c("mag","dist","poe","imt")
+    missing_cols  <- setdiff(required_cols, names(dt_raw))
+    if (length(missing_cols)) {
+      next
+    }
+
+    setnames(dt_raw, old=c("mag","dist","poe"), new=c("Mw","R","POE"), skip_absent=TRUE)
+    if ("iml" %in% names(dt_raw)) {
+      dt_raw[, iml := NULL]
+    }
+
+    # rename (rlz|mean)->p
+    rlz_col <- grep("rlz|mean", names(dt_raw), value=TRUE)
+    if (length(rlz_col)==1) {
+      setnames(dt_raw, old=rlz_col, new="p")
+    } else {
+      # skip file if no single p col
+      next
+    }
+
+    # convert "imt" => Tn
+    dt_raw[imt=="PGA", imt:="Sa(0.0)"]
+    dt_raw[, Tn := stringr::str_extract(imt, "(?<=\\()\\d+\\.*\\d*(?=\\))")]
+    dt_raw[, Tn := as.numeric(Tn)]
+    dt_raw[is.na(Tn), Tn:=0]
+
+    dt_raw[, IT:= ITo]
+    dt_raw[, `:=`(AEP=POE/IT, TR=1/(POE/IT))]
+    DHT <- rbind(DHT, dt_raw, fill=TRUE)
+  }
+
+  unlink(tmp_dir, recursive=TRUE, force=TRUE)
+  if (!nrow(DHT)) {
+    message("No valid disagg data found.")
+    return(NULL)
+  }
+  # remove duplicates if desired
+  DHT <- unique(DHT)
+  return(DHT[])
+}
+
+
+importModel.userAEP <- function(path = NULL, filename = "AEP.xlsx") {
+  if (is.null(path) || !dir.exists(path)) {
+    stop("Invalid `path`: must be a directory.")
+  }
+
+  file_xlsx <- file.path(path, filename)
+  if (!file.exists(file_xlsx)) {
+    stop("File not found: ", file_xlsx)
+  }
+
+  sheets_all <- readxl::excel_sheets(file_xlsx)
+  # We expect sheet names like "p=0.16", "p=mean", etc.
+  sheets_p <- grep(pattern = "^p=", sheets_all, value = TRUE)
+  if (length(sheets_p) == 0) {
+    stop("No sheets named 'p=...' found in: ", file_xlsx)
+  }
+
+  AT <- data.table()
+  for (SHEET in sheets_p) {
+    dt_sheet <- data.table::as.data.table(
+      readxl::read_xlsx(file_xlsx, sheet = SHEET)
+    )
+    if (!("Tn" %in% names(dt_sheet))) {
+      stop("Missing column 'Tn' in sheet '", SHEET, "'.")
+    }
+
+    # We'll assume all other columns besides Tn are "ground motion" columns
+    id_var <- "Tn"
+    measure_vars <- setdiff(names(dt_sheet), id_var)
+    if (length(measure_vars) == 0) {
+      warning("No measure columns in sheet '", SHEET, "'. Skipping.")
+      next
+    }
+
+    # Reshape from wide to long
+    aux <- melt(
+      dt_sheet,
+      id.vars = id_var,
+      measure.vars = measure_vars,
+      variable.name = "Sa",
+      value.name    = "AEP",
+      variable.factor = FALSE
+    )
+    aux[, Sa := as.character(Sa)]
+
+    # parse the "p" from the sheet name, e.g. "p=0.16" -> 0.16
+    po <- stringr::str_remove(SHEET, "p=")
+    if (po != "mean") {
+      po_num <- suppressWarnings(as.numeric(po))
+      if (!is.na(po_num)) {
+        po <- po_num
+      }
+      # else it might remain a character if it's not numeric
+    }
+
+    # Filter out non-positive AEP
+    aux <- aux[AEP > 0]
+    # Convert Sa factor or string to numeric
+    if (!is.numeric(aux$Sa)) {
+      # attempt to parse numeric from the factor/character
+      aux[, Sa := suppressWarnings(as.numeric(as.character(Sa)))]
+    }
+
+    aux[, p := po]
+    aux[, IT := 50]   # default
+    aux[, POE := 1 - exp(-IT * AEP)] # exact relationship
+    aux[, TR := 1 / AEP]
+
+    AT <- rbind(AT, aux, use.names = TRUE, fill = TRUE)
+  }
+
+  # reorder columns
+  col_order <- c("Tn","Sa","AEP","p","POE","TR","IT")
+  col_order <- intersect(col_order, names(AT))
+  setcolorder(AT, col_order)
+
+  return(AT[])
+}

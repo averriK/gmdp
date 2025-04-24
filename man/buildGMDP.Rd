@@ -2,11 +2,11 @@
 % Please edit documentation in R/buildGMDP.R
 \name{buildGMDP}
 \alias{buildGMDP}
-\title{Build Ground-Motion Data Products from OpenQuake}
+\title{Build GMDP (Rbind Approach, No Merges) With Param Col Removal}
 \usage{
 buildGMDP(
   path,
-  IDo = "00000000",
+  IDo = "gmdp",
   engine = "openquake",
   vs30 = NULL,
   vref,
@@ -15,24 +15,25 @@ buildGMDP(
 )
 }
 \arguments{
-\item{path}{character. Path to the folder containing OQ hazard & UHS CSVs/zips}
+\item{path}{character. OQ hazard folder}
 
-\item{IDo}{character Output ID label}
+\item{IDo}{...}
 
-\item{engine}{character c("openquake","user")}
+\item{engine}{c("openquake","user")}
 
-\item{vs30}{numeric. Vs30 steps}
+\item{vs30}{numeric vector}
 
-\item{vref}{numeric reference Vs30}
+\item{vref}{numeric}
 
-\item{quantile_AF}{character. c("mean", 0.16, 0.50, 0.84)}
+\item{quantile_AF}{default "mean"}
 
-\item{param}{logical. If TRUE => do param expansions}
+\item{param}{if TRUE => expansions => param-based UHS, else read as-is}
 }
 \value{
-A list of \code{(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)}
+list(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)
 }
 \description{
-Replicates the old code logic but allows \code{param=FALSE} to skip param expansions.
-Always reads "as-is" UHS from CSV if present, so \code{UHSTable} is never empty.
+Same "rbind blocks for each Vs30" code as before, but we remove param columns
+(\verb{a,b,c,sdLnA}) immediately, so the final tables don't contain them when
+you rbind with any other table that doesn't have them.
 }
