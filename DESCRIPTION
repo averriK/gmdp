@@ -11,11 +11,10 @@ Roxygen: list(markdown = TRUE)
 Imports: 
     data.table,
     epoxy,
-    stringr,
-    readxl,
     stats,   
+    readxl,
+    stringr,
     randomForest,
-    dsra,
     rpart,
     utils
 Depends: 

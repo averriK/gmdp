@@ -2,24 +2,41 @@
 % Please edit documentation in R/buildGMDP.R
 \name{buildGMDP}
 \alias{buildGMDP}
-\title{Title}
+\title{Build GMDP (Rbind Approach, No Merges) With Param Col Removal}
 \usage{
-buildGMDP(path, IDo = "00000000", engine = "openquake", vs30 = NULL, vref)
+buildGMDP(
+  path,
+  IDo = "gmdp",
+  engine = "openquake",
+  vs30 = NULL,
+  vref,
+  quantile_AF = "mean",
+  param = FALSE,
+  TRo = NULL
+)
 }
 \arguments{
-\item{path}{character}
+\item{path}{character. OQ hazard folder}
 
-\item{IDo}{character Output IDo}
+\item{IDo}{string. Identifier (e.g. "gmdp" or "gem")}
 
-\item{engine}{character c("openquake","user")}
+\item{engine}{c("openquake","user")}
 
-\item{vs30}{numeric Vs30 Step}
+\item{vs30}{numeric vector}
 
-\item{vref}{Vs30 in m/s}
+\item{vref}{numeric}
+
+\item{quantile_AF}{character. Default "mean"}
+
+\item{param}{logical. If TRUE => expansions => param-based UHS, else read as-is}
+
+\item{TRo}{numeric vector of return periods for param expansions. If NULL
+(default), uses the original built-in sequence. Used only when \code{param=TRUE}.}
 }
 \value{
-list
+list(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)
 }
 \description{
-Title
+Same "rbind blocks for each Vs30" code as before, but now includes an optional
+\code{TRo} argument for user-specified return periods when \code{param=TRUE}.
 }

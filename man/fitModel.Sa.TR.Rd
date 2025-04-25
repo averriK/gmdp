@@ -2,20 +2,46 @@
 % Please edit documentation in R/fitModel.Sa.TR.R
 \name{fitModel.Sa.TR}
 \alias{fitModel.Sa.TR}
-\title{Linear regression model for Sa in terms of TR}
+\title{Fit Parametric Model for Sa as a Function of TR}
 \usage{
 fitModel.Sa.TR(x, TRmin = 100, TRmax = 10000)
 }
 \arguments{
-\item{x}{data.table with columns Sa and TR}
+\item{x}{A data.table with at least the columns \code{Sa}, \code{TR}, \code{AEP}, and \code{POE}.}
 
-\item{TRmin}{minimum TR value to fit}
+\item{TRmin}{Numeric. Minimum return period to include in the fitting.}
 
-\item{TRmax}{maximum TR value to fit}
+\item{TRmax}{Numeric. Maximum return period to include in the fitting.}
 }
 \value{
-data table with columns a, b, c, sdLnA, R2, MSE, RMSE, fit
+A data.table with columns:
+\itemize{
+\item \strong{a, b, c}: regression coefficients
+\item \strong{sdLnA}: standard deviation of residuals in ln(Sa)
+\item \strong{R2}: R-squared
+\item \strong{MSE, RMSE}: mean squared error and root mean squared error (in ln-space)
+\item \strong{fit}: a string expression like \code{"exp(a + b * log(TR) + c * 1/TR)"}
+}
+If the fitting fails or returns NA values, it will produce \code{NULL}.
 }
 \description{
-Linear regression model for Sa in terms of TR
+Performs a linear regression on \code{ln(Sa)} against \code{ln(TR)} and \code{1/TR}.
+The model is:
+\deqn{\ln(Sa) = a + b \ln(TR) + c (1/TR).}
+}
+\details{
+The function first filters rows where \code{AEP > 0 \& POE > 0}. Then it
+keeps only rows with \code{TRmin <= TR <= TRmax}. It does a linear model of
+\code{LnA ~ LnTr + I(1/TR)}. The final expression is stored in the \code{fit}
+column for convenience.
+}
+\examples{
+\dontrun{
+library(data.table)
+dt <- data.table(Sa=c(0.1,0.3,0.5),
+                 TR=c(100,500,1000),
+                 AEP=c(0.01,0.002,0.001),
+                 POE=c(0.3935,0.0952,0.0488))
+fitModel.Sa.TR(dt)
+}
 }

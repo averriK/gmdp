@@ -44,8 +44,8 @@ UHSTable <- readRDS("test/UHSTable.rds")
 
 Vs30_TARGET <- 250
 TR_TARGET <- c(100,475,1000,2475,5000,10000)
-UHS <- UHSTable[ SM=="openquake" & ID=="nrc_v3.19.1" & TR %in% TR_TARGET & Vs30 == Vs30_TARGET  & p=="mean"]
-DnTable <-  UHS[,dsra::fitModel.Dn.TR(Sa=Sa,PGA=PGA,Tn=Tn,Mw = 6.5, xD = 1.3, kymin = 0.001, kymax = 0.55, n = 100), by = .(ID,SM,Tn, TR,Vref,Vs30, p)] |> unique()
+UHS <- UHSTable[ ID=="nrc_v3.19.1" & TR %in% TR_TARGET & Vs30 == Vs30_TARGET  & p=="mean"]
+DnTable <-  UHS[,fitModel.Dn.TR(Sa=Sa,PGA=PGA,Tn=Tn,Mw = 6.5, xD = 1.3, kymin = 0.001, kymax = 0.55, n = 100), by = .(ID,Tn, TR,Vref,Vs30, p)] |> unique()
 
 
 # Example #3. Build KmaxTable
