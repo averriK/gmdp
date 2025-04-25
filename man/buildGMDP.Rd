@@ -11,13 +11,14 @@ buildGMDP(
   vs30 = NULL,
   vref,
   quantile_AF = "mean",
-  param = FALSE
+  param = FALSE,
+  TRo = NULL
 )
 }
 \arguments{
 \item{path}{character. OQ hazard folder}
 
-\item{IDo}{...}
+\item{IDo}{string. Identifier (e.g. "gmdp" or "gem")}
 
 \item{engine}{c("openquake","user")}
 
@@ -25,15 +26,17 @@ buildGMDP(
 
 \item{vref}{numeric}
 
-\item{quantile_AF}{default "mean"}
+\item{quantile_AF}{character. Default "mean"}
 
-\item{param}{if TRUE => expansions => param-based UHS, else read as-is}
+\item{param}{logical. If TRUE => expansions => param-based UHS, else read as-is}
+
+\item{TRo}{numeric vector of return periods for param expansions. If NULL
+(default), uses the original built-in sequence. Used only when \code{param=TRUE}.}
 }
 \value{
 list(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)
 }
 \description{
-Same "rbind blocks for each Vs30" code as before, but we remove param columns
-(\verb{a,b,c,sdLnA}) immediately, so the final tables don't contain them when
-you rbind with any other table that doesn't have them.
+Same "rbind blocks for each Vs30" code as before, but now includes an optional
+\code{TRo} argument for user-specified return periods when \code{param=TRUE}.
 }

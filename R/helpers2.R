@@ -1,7 +1,7 @@
 
 ##############################################################################
 # Helpers:
-##############################################################################
+
 
 importModel.oqUHS <- function(path) {
   if (!dir.exists(path)) stop("Path does not exist: ", path)
@@ -39,25 +39,28 @@ importModel.oqUHS <- function(path) {
     setnames(dt_raw, col_names)
     dt_raw <- dt_raw[-1]
 
+    # possibly drop lat/lon/depth
     dropCols <- intersect(c("lat","lon","depth"), col_names)
     keepCols <- setdiff(col_names, dropCols)
     dt_raw <- dt_raw[, ..keepCols]
 
+    # columns like "0.095160~PGA", "0.095160~SA(0.05)", etc.
     measure_cols <- grep("^[0-9\\.]+~", keepCols, value=TRUE)
     id_cols <- setdiff(keepCols, measure_cols)
 
     dt_long <- melt(
       dt_raw,
-      id.vars=id_cols,
-      measure.vars=measure_cols,
-      variable.name="col_label",
-      value.name="Sa",
+      id.vars       = id_cols,
+      measure.vars  = measure_cols,
+      variable.name = "col_label",
+      value.name    = "Sa",
       variable.factor=FALSE
     )
     dt_long[, Sa := as.numeric(Sa)]
 
+    # parse (POE, Tn) from "0.095160~SA(0.05)" or "~PGA"
     parsed <- safeParseUHS(dt_long$col_label)
-    dt_long[, `:=`(POE=parsed[[1]], Tn_m=parsed[[2]])]
+    dt_long[, `:=`(POE = parsed[[1]], Tn_m = parsed[[2]])]
     dt_long[, col_label := NULL]
 
     dt_long <- dt_long[!is.na(POE) & !is.na(Tn_m) & POE<1]
@@ -69,17 +72,22 @@ importModel.oqUHS <- function(path) {
       dt_long[, `:=`(AEP=NA_real_, TR=NA_real_)]
     }
 
+    # rename Tn_m -> Tn if needed
     if (!"Tn" %in% names(dt_long)) {
       setnames(dt_long, "Tn_m", "Tn")
     } else {
       dt_long[, Tn_m := NULL]
     }
+    # if no p col, set from p_val
     if (!"p" %in% names(dt_long)) {
       dt_long[, p := p_val]
     }
     dt_long[, IT := ITval]
 
-    out_list[[ iCount <- iCount+1 ]] <- dt_long
+    # PATCH: round TR to 0 decimals
+    dt_long[, TR := round(TR)]
+
+    out_list[[ iCount <- iCount + 1 ]] <- dt_long
   }
 
   unlink(tmp_dir, recursive=TRUE, force=TRUE)
@@ -91,6 +99,7 @@ importModel.oqUHS <- function(path) {
   setcolorder(DT, keepC)
   return(DT[])
 }
+
 
 
 importModel.oqAEP <- function(path, vref) {
