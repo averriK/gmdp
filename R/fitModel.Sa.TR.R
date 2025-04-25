@@ -44,6 +44,7 @@ fitModel.Sa.TR <- function(x, TRmin = 100, TRmax = 10000) {
   if (!inherits(x, "data.table")) {
     stop("`x` must be a data.table")
   }
+  . <- NULL
   required_cols <- c("Sa", "TR", "AEP", "POE")
   missing_cols <- setdiff(required_cols, names(x))
   if (length(missing_cols) > 0) {
