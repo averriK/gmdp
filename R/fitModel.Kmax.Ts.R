@@ -1,23 +1,43 @@
-#' Title
+#' Fit Maximum Acceleration Model for Period
 #'
-#' @param .data data.table
-#' @param Tso double
-#' @param Dao double
-#' @param model string c("nlm","rf")
-#' @param OSF double
+#' @description
+#' Fits a model to predict maximum acceleration (Kmax) and horizontal acceleration (Kh) based on period (Ts) and displacement (Da).
 #'
-#' @return
-#' @export fitModel.Kmax.Ts
+#' @param .data data.table. Input data containing Ts, Kh, Kmax, and Da values.
+#' @param Tso Numeric. Target period value.
+#' @param Dao Numeric. Target displacement value.
+#' @param model Character. Model type to use: "nlm" for non-linear mixed effects or "rf" for random forest. Default is "rf".
+#' @param OSF Numeric. Oversampling factor for random forest model. Default is 0.3.
 #'
-#' @import rpart
-#' @import randomForest
-#' @import data.table
-#' @importFrom stats predict
-#' @importFrom stats glm
-#' @importFrom stats lm
+#' @return A data.table containing:
+#' \itemize{
+#'   \item Ts: Period
+#'   \item Da: Displacement
+#'   \item Kh: Horizontal acceleration
+#'   \item Kmax: Maximum acceleration
+#' }
 #'
+#' @importFrom data.table data.table CJ between
+#' @importFrom randomForest randomForest
+#' @importFrom stats glm predict
 #'
 #' @examples
+#' \dontrun{
+#' data <- data.table(
+#'     Ts = c(0.5, 1.0, 1.5),
+#'     Kh = c(0.3, 0.4, 0.5),
+#'     Kmax = c(0.4, 0.5, 0.6),
+#'     Da = c(10, 20, 30)
+#' )
+#' result <- fitModel.Kmax.Ts(
+#'     .data = data,
+#'     Tso = 1.0,
+#'     Dao = 20,
+#'     model = "rf"
+#' )
+#' }
+#'
+#' @export
 fitModel.Kmax.Ts <- function(.data, Tso, Dao, model = "rf", OSF = 0.3) {
     # stopifnot(length(Tso)==1&length(Dao)==1)
     stopifnot(model %in% c("nlm", "rf"))
