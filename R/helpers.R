@@ -1,7 +1,78 @@
 
-##############################################################################
 # Helper internal parsing functions:
-##############################################################################
+#' @noRd
+interpolateHazCurve <- function(DF, POE_star_vec, ITe) {
+  # Sort by POE ascending
+  DF <- DF[order(POE)]
+  minPOE <- min(DF$POE)
+  maxPOE <- max(DF$POE)
+
+  results <- numeric(length(POE_star_vec))
+
+  for (i in seq_along(POE_star_vec)) {
+    poe_star <- POE_star_vec[i]
+    if (poe_star <= minPOE) {
+      # clamp to min
+      results[i] <- DF$Sa[1]
+    } else if (poe_star >= maxPOE) {
+      # clamp to max
+      results[i] <- DF$Sa[.N]
+    } else {
+      idx_high <- which(DF$POE >= poe_star)[1]
+      idx_low  <- idx_high - 1
+
+      x1 <- DF$POE[idx_low]
+      x2 <- DF$POE[idx_high]
+      y1 <- DF$Sa[idx_low]
+      y2 <- DF$Sa[idx_high]
+      frac <- (poe_star - x1) / (x2 - x1)
+
+      val_log   <- log(y1) + frac * (log(y2) - log(y1))
+      results[i] <- exp(val_log)
+    }
+  }
+  return(results)
+}
+
+#' @noRd
+checkTargetPOE <- function(poe_target,
+                           poe_imported,
+                           investigation_time,
+                           tolTR = 0) {
+  # Convert the user-specified POEs into integer TR
+  TR_target <- round(-investigation_time / log(1 - poe_target))
+
+  # Convert the OQ data's POEs into unique integer TR
+  TR_imported <- round(-investigation_time / log(1 - poe_imported))
+  TR_imported <- unique(TR_imported)  # single step to ensure uniqueness
+
+  # For each TR_target, check if there's a matching TR_imported (± tolTR)
+  pass_check <- sapply(TR_target, function(trt) {
+    any(abs(TR_imported - trt) <= tolTR)
+  })
+
+  if (all(pass_check)) {
+    message(sprintf(
+      "checkTargetPOE: All target TRs match OQ data (tolTR=%d).", tolTR
+    ))
+  } else {
+    failTR <- TR_target[!pass_check]
+    stop(sprintf(
+      "checkTargetPOE: The following target TRs not found in OQ data (tolTR=%d): %s.\n",
+      tolTR, paste(failTR, collapse=", ")
+    ))
+  }
+
+  # Optionally return a small summary (invisibly)
+  invisible(
+    data.table::data.table(
+      POE_target = poe_target,
+      TR_target  = TR_target,
+      pass_check = pass_check
+    )
+  )
+}
+
 #' @noRd
 
 .extractQuantileFromHeader <- function(line) {

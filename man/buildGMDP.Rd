@@ -11,7 +11,11 @@ buildGMDP(
   vs30 = NULL,
   vref,
   quantile_AF = "mean",
+<<<<<<< HEAD
   param = FALSE
+=======
+  POE_TARGET = NULL
+>>>>>>> 3bae604 (clean)
 )
 }
 \arguments{
@@ -23,11 +27,19 @@ buildGMDP(
 
 \item{vs30}{Numeric vector or NULL => no site amp}
 
+<<<<<<< HEAD
 \item{vref}{Numeric reference Vs30 (760 or 3000)}
 
 \item{quantile_AF}{e.g. "mean"}
 
 \item{param}{logical. If TRUE => expansions, else meltdown}
+=======
+\item{vref}{Vs30 in m/s}
+
+\item{quantile_AF}{character c("mean",0.16,0.50,0.84)}
+
+\item{POE_TARGET}{numeric Target Probability of Exceedance}
+>>>>>>> 3bae604 (clean)
 }
 \value{
 list(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)
