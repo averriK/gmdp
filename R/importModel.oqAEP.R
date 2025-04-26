@@ -14,9 +14,6 @@
 importModel.oqAEP <- function(path, vref) {
     . <- NULL
 
-
-
-
     DT <- data.table::data.table()
     PATH <- path
     FILES <- list.files(path = PATH, pattern = "quantile_curve")
