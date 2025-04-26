@@ -17,8 +17,6 @@ buildGMDP(
 \arguments{
 \item{path}{Character. Path to the directory containing hazard data files.}
 
-\item{IDo}{Character. Identifier for the output. Default is "gmdp".}
-
 \item{engine}{Character. Source of hazard data, either "openquake" or "user". Default is "openquake".}
 
 \item{vs30}{Numeric vector. Target Vs30 values for site response analysis. If NULL, no site response is performed.}

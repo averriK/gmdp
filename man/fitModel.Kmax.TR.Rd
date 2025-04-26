@@ -2,26 +2,50 @@
 % Please edit documentation in R/fitModel.Kmax.TR.R
 \name{fitModel.Kmax.TR}
 \alias{fitModel.Kmax.TR}
-\title{Title}
+\title{Fit Maximum Acceleration Model for Return Period}
 \usage{
 fitModel.Kmax.TR(a, b, e, pga, Ts, n = 20)
 }
 \arguments{
-\item{a}{numeric. a parameter}
+\item{a}{Numeric. Model parameter a.}
 
-\item{b}{numeric. b parameter}
+\item{b}{Numeric. Model parameter b.}
 
-\item{e}{numeric. e parameter}
+\item{e}{Numeric. Model parameter e.}
 
-\item{pga}{numeric. PGA value}
+\item{pga}{Numeric. Peak ground acceleration value.}
 
-\item{Ts}{numeric. Ts value}
+\item{Ts}{Numeric. Period value.}
 
-\item{n}{numeric. Number of points}
+\item{n}{Numeric. Number of points to generate. Default is 20.}
 }
 \value{
-data.table
+A data.table containing:
+\itemize{
+\item Ts: Period
+\item Da: Displacement (cm)
+\item Kmax: Maximum acceleration (g)
+\item Kh: Horizontal acceleration (\%)
+\item Kmax_Unit: Unit of Kmax (g)
+\item Kh_Unit: Unit of Kh (\%)
+\item Da_Unit: Unit of Da (cm)
+\item Dmin: Minimum displacement (cm)
+\item Dmax: Maximum displacement (cm)
+\item PGA: Peak ground acceleration
+}
 }
 \description{
-Title
+Fits a model to predict maximum acceleration (Kmax) and horizontal acceleration (Kh) based on period (Ts) and peak ground acceleration (PGA).
+}
+\examples{
+\dontrun{
+result <- fitModel.Kmax.TR(
+    a = 2.5,
+    b = 1.0,
+    e = 0.74,
+    pga = 0.3,
+    Ts = 1.0
+)
+}
+
 }

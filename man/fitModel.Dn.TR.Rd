@@ -2,7 +2,7 @@
 % Please edit documentation in R/fitModel.Dn.TR.R
 \name{fitModel.Dn.TR}
 \alias{fitModel.Dn.TR}
-\title{Title}
+\title{Fit Displacement Model for Return Period}
 \usage{
 fitModel.Dn.TR(
   Tn,
@@ -16,25 +16,56 @@ fitModel.Dn.TR(
 )
 }
 \arguments{
-\item{Tn}{Double. Natural Period}
+\item{Tn}{Numeric. Natural period.}
 
-\item{Sa}{Double. Spectral Acceleration}
+\item{Sa}{Numeric. Spectral acceleration.}
 
-\item{PGA}{Double. Peak Ground Acceleration}
+\item{PGA}{Numeric. Peak ground acceleration.}
 
-\item{xD}{Double. BM19 Factor}
+\item{xD}{Numeric. BM19 factor. Default is 1.3.}
 
-\item{Mw}{Double. Magnitude}
+\item{Mw}{Numeric. Magnitude. Default is 6.5.}
 
-\item{kymin}{Double. Minimum ky value}
+\item{kymin}{Numeric. Minimum ky value. Default is 0.005.}
 
-\item{kymax}{Double. Maximum ky value}
+\item{kymax}{Numeric. Maximum ky value. Default is 0.5.}
 
-\item{n}{Integer. Number of ky values}
+\item{n}{Integer. Number of ky values. Default is 30.}
 }
 \value{
-data.table
+A data.table containing:
+\itemize{
+\item PGA: Peak ground acceleration (g)
+\item PGV: Peak ground velocity (cm/s)
+\item Ts: Period
+\item ky: Yield coefficient
+\item Mw: Magnitude
+\item c1, c2, c3: Model coefficients
+\item a0, a1, a2: Model parameters
+\item muLnD: Mean of natural logarithm of displacement
+\item P, Q: Model parameters
+\item a, b: Model coefficients
+\item P0: Probability
+\item e: Model parameter
+\item Dn: Displacement (cm)
+\item sdLnD: Standard deviation of natural logarithm of displacement
+\item PGA_Unit: Unit of PGA (g)
+\item PGV_Unit: Unit of PGV (cm/s)
+\item Dn_Unit: Unit of displacement (cm)
+}
 }
 \description{
-Title
+Fits a displacement model for a given return period based on spectral acceleration, peak ground acceleration, and other parameters.
+}
+\examples{
+\dontrun{
+result <- fitModel.Dn.TR(
+    Tn = 1.0,
+    Sa = 0.5,
+    PGA = 0.3,
+    xD = 1.3,
+    Mw = 6.5
+)
+}
+
 }

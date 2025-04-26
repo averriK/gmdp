@@ -6,7 +6,6 @@
 #' This function builds ground motion design parameters from hazard curves obtained from OpenQuake or user-provided data.
 #'
 #' @param path Character. Path to the directory containing hazard data files.
-#' @param IDo Character. Identifier for the output. Default is "gmdp".
 #' @param engine Character. Source of hazard data, either "openquake" or "user". Default is "openquake".
 #' @param vs30 Numeric vector. Target Vs30 values for site response analysis. If NULL, no site response is performed.
 #' @param vref Numeric. Reference Vs30 value. Default is 760 m/s.
@@ -75,7 +74,7 @@ buildGMDP <- function(path,
         RMwTable <- importModel.oqRMw(path = TEMP, ITo = ITo, vref = vref)
     }
     if (!is.null(RMwTable)) {
-        RMwTable[, `:=`(SID = Vs30toSID(vref), Vs30 = vref, SM = engine, ID = IDo, IT = ITo)]
+        RMwTable[, `:=`(SID = Vs30toSID(vref), Vs30 = vref, SM = engine,  IT = ITo)]
     } else {
         message("> Disaggregation data not available.")
     }
@@ -92,7 +91,6 @@ buildGMDP <- function(path,
 
     COLS <- setdiff(colnames(UHSTable), c("Sa", "Tn", "AEP", "POE"))
     UHSTable[, PGA := Sa[Tn == 0], by = COLS]
-    UHSTable[, Vref := vref]
 
     AFmodel <- data.table()
 
@@ -101,18 +99,23 @@ buildGMDP <- function(path,
             message(sprintf("> Fit UHS Site Response for Vs30 %.1f...", Vs))
             COLS <- setdiff(colnames(UHSTable), c("Sa", "PGA", "AEP", "POE"))
 
-            AUX <- UHSTable[, fitModel.AF.TR(.x = .SD, pga = PGA, q = q_AF, Tn = Tn, vs30 = Vs, vref = Vref), by = COLS]
+            AUX <- UHSTable[, fitModel.AF.TR(.x = .SD, pga = PGA, q = q_AF, Tn = Tn, vs30 = Vs, vref = vref), by = COLS]
             AFmodel <- rbindlist(list(AFmodel, AUX), use.names = TRUE)
             message(sprintf("> Fit AEP Site Response for Vs30 %.1f...", Vs))
         }
+      COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(AFmodel)]
+      UHSTable <- AFmodel[UHSTable, on = COLS][, `:=`(Sa = AF * Sa, PGA = AF * PGA)] |> unique()
     }
     if (is.null(vs30)) {
-        UHSTable <- data.table(UHSTable, Vs30 = vref, AF = 1, sdLnAF = 0)
+        UHSTable[,`:=`(Vref=vref,Vs30 = vref, AF = 1, sdLnAF = 0)]
     }
 
     message("> Update UHSTable ...")
-    COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(AFmodel)]
-    UHSTable <- AFmodel[UHSTable, on = COLS][, `:=`(Sa = AF * Sa, PGA = AF * PGA)] |> unique()
+
+
+    AEPTable[,ID:=IDo]
+    UHSTable[,ID:=IDo]
+
 
     return(list(
         AEPTable = AEPTable,
