@@ -128,8 +128,8 @@ buildGMDP <- function(path,
   message("> Merge Tn=0 => PGA into AEPTable ...")
   AEPTable[ , PGA := Sa[Tn == 0],           by = .(lat, lon, depth, p, TR)]
   # (6) Site Amplification
-  AFmodel_UHS <- data.table()
-  AFmodel_AEP <- data.table()
+  AFmodel <- data.table()
+  # AFmodel_AEP <- data.table()
 
   if (!is.null(vs30) && vref %in% c(760,3000)) {
     for (Vs in vs30) {
@@ -139,38 +139,24 @@ buildGMDP <- function(path,
         dsra::fitModel.AF.TR(.x=.SD, pga=PGA, q="mean", Tn=Tn, vs30=Vs, vref=vref),
         by=.(p,lat,lon,depth,Tn)
       ]
-      AFmodel_UHS <- rbindlist(list(AFmodel_UHS, AUX), use.names=TRUE)
+      AFmodel <- rbindlist(list(AFmodel, AUX), use.names=TRUE)
 
       message(sprintf("> Fit AEP Site Response for Vs30 %.1f...", Vs))
-      browser()
 
-      AUX <- AEPTable[
-        ,
-        dsra::fitModel.AF.TR(.x=.SD, pga=PGA, q="mean", Tn=Tn, vs30=Vs, vref=vref),
-        by=.(p,lat,lon,depth,Tn)
-      ]
-      AFmodel_AEP <- rbindlist(list(AFmodel_AEP, AUX), use.names=TRUE)
     }
 
     message("> Update UHSTable ...")
-    AUX <- AFmodel_UHS[, .(Vref, Vs30, lat, lon, depth, p, Tn, AF, SID, SM, PGA, sdLnAF)] |> unique()
+    AUX <- AFmodel[, .(Vref, Vs30, lat, lon, depth, p, Tn, AF, SID, SM, PGA, sdLnAF)] |> unique()
     COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(AUX)]
-    AFmodel_UHS <- unique(AFmodel_UHS, by=c("lat","lon","depth","Tn","p","Vs30","Vref","SID","SM"))
+    AFmodel <- unique(AFmodel, by=c("lat","lon","depth","Tn","p","Vs30","Vref","SID","SM"))
     UHSTable <- AUX[UHSTable, on=COLS][
       , `:=`(Sa=AF*Sa, PGA=AF*PGA)
     ] |> unique()
 
-    message("> Update AEPTable ...")
-    AUX <- AFmodel_AEP[, .(Vref, Vs30, lat, lon, depth, p, Tn, AF, SID, SM, PGA, sdLnAF)] |> unique()
-    COLS <- colnames(AEPTable)[colnames(AEPTable) %in% colnames(AUX)]
-    AFmodel_AEP <- unique(AFmodel_AEP, by=c("lat","lon","depth","Tn","p","Vs30","Vref","SID","SM"))
-    AEPTable <- AUX[AEPTable, on=COLS][
-      , `:=`(Sa=AF*Sa, PGA=AF*PGA)
-    ] |> unique()
-  } else if (is.null(vs30)) {
+
+  }
+  if (is.null(vs30)) {
     UHSTable <- data.table(UHSTable, Vref=vref, Vs30=vref, AF=1,
-                           SID=Vs30toSID(vref), SM="openquake", sdLnAF=0)
-    AEPTable <- data.table(AEPTable, Vref=vref, Vs30=vref, AF=1,
                            SID=Vs30toSID(vref), SM="openquake", sdLnAF=0)
   }
 
@@ -178,8 +164,7 @@ buildGMDP <- function(path,
   return(list(
     AEPTable    = AEPTable,
     UHSTable    = UHSTable,
-    AFmodel_AEP = AFmodel_AEP,
-    AFmodel_UHS = AFmodel_UHS,
+    AFmodel = AFmodel,
     SaTRmodel   = NULL,
     RMwTable    = RMwTable
   ))
