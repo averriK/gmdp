@@ -126,9 +126,7 @@ buildGMDP <- function(path,
 
   # (5) Also define PGA in AEPTable if Tn=0 is present for same TR
   message("> Merge Tn=0 => PGA into AEPTable ...")
-  pTableAEP <- AEPTable[Tn==0, .(lat,lon,depth,p,TR, PGA=Sa)]
-  AEPTable  <- pTableAEP[AEPTable, on=c("lat","lon","depth","p","TR")]
-
+  AEPTable[ , PGA := Sa[Tn == 0],           by = .(lat, lon, depth, p, TR)]
   # (6) Site Amplification
   AFmodel_UHS <- data.table()
   AFmodel_AEP <- data.table()
