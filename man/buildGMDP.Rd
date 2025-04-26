@@ -4,7 +4,15 @@
 \alias{buildGMDP}
 \title{Title}
 \usage{
-buildGMDP(path, IDo = "00000000", engine = "openquake", vs30 = NULL, vref)
+buildGMDP(
+  path,
+  IDo = "00000000",
+  engine = "openquake",
+  vs30 = NULL,
+  vref,
+  quantile_AF = "mean",
+  POE_TARGET = NULL
+)
 }
 \arguments{
 \item{path}{character}
@@ -16,6 +24,10 @@ buildGMDP(path, IDo = "00000000", engine = "openquake", vs30 = NULL, vref)
 \item{vs30}{numeric Vs30 Step}
 
 \item{vref}{Vs30 in m/s}
+
+\item{quantile_AF}{character c("mean",0.16,0.50,0.84)}
+
+\item{POE_TARGET}{numeric Target Probability of Exceedance}
 }
 \value{
 list
