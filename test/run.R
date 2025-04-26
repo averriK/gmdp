@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 devtools::load_all()
 source("test/data.R")
 BUILD_ST17 <- TRUE
@@ -9,6 +10,8 @@ SMOOTH_Tn <- FALSE
 source("test/build_UHS.R")
 UHSTable <- UHSTable[TR %in% TR_TARGET]
 =======
+=======
+>>>>>>> origin/v0.7.1
 # nolint start
 
 # MCE
@@ -45,4 +48,7 @@ if (BUILD_KIT) {
 }
 
 # nolint end
+<<<<<<< HEAD
 >>>>>>> 3bae604 (clean)
+=======
+>>>>>>> origin/v0.7.1

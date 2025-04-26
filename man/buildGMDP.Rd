@@ -12,10 +12,14 @@ buildGMDP(
   vref,
   quantile_AF = "mean",
 <<<<<<< HEAD
+<<<<<<< HEAD
   param = FALSE
 =======
   POE_TARGET = NULL
 >>>>>>> 3bae604 (clean)
+=======
+  POE_TARGET = NULL
+>>>>>>> origin/v0.7.1
 )
 }
 \arguments{
@@ -39,7 +43,10 @@ buildGMDP(
 \item{quantile_AF}{character c("mean",0.16,0.50,0.84)}
 
 \item{POE_TARGET}{numeric Target Probability of Exceedance}
+<<<<<<< HEAD
 >>>>>>> 3bae604 (clean)
+=======
+>>>>>>> origin/v0.7.1
 }
 \value{
 list(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)

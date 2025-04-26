@@ -8,9 +8,12 @@ export(fitModel.Dn.TR)
 export(fitModel.Kmax.TR)
 export(fitModel.Kmax.Ts)
 <<<<<<< HEAD
+<<<<<<< HEAD
 export(fitModel.Sa.TR)
 export(refineUHS)
 =======
+=======
+>>>>>>> origin/v0.7.1
 export(importModel.oqAEP)
 export(importModel.oqRMw)
 export(importModel.userAEP)
@@ -28,10 +31,13 @@ importFrom(stats,glm)
 importFrom(stats,lm)
 importFrom(stats,predict)
 <<<<<<< HEAD
+<<<<<<< HEAD
 importFrom(stats,predict.lm)
 importFrom(stats,qnorm)
 importFrom(stats,splinefun)
 =======
+=======
+>>>>>>> origin/v0.7.1
 importFrom(stringr,str_detect)
 importFrom(stringr,str_extract)
 importFrom(stringr,str_remove)
