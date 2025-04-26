@@ -2,41 +2,57 @@
 % Please edit documentation in R/buildGMDP.R
 \name{buildGMDP}
 \alias{buildGMDP}
-\title{Build GMDP (Rbind Approach, No Merges) With Param Col Removal}
+\title{buildGMDP (Old Code style: peakTable + param=TRUE/FALSE)}
 \usage{
 buildGMDP(
   path,
-  IDo = "gmdp",
+  IDo = "00000000",
   engine = "openquake",
   vs30 = NULL,
   vref,
   quantile_AF = "mean",
-  param = FALSE,
-  TRo = NULL
+  param = FALSE
 )
 }
 \arguments{
-\item{path}{character. OQ hazard folder}
+\item{path}{Path to hazard folder}
 
-\item{IDo}{string. Identifier (e.g. "gmdp" or "gem")}
+\item{IDo}{String ID to store in final tables}
 
-\item{engine}{c("openquake","user")}
+\item{engine}{"openquake" or "user"}
 
-\item{vs30}{numeric vector}
+\item{vs30}{Numeric vector or NULL => no site amp}
 
-\item{vref}{numeric}
+\item{vref}{Numeric reference Vs30 (760 or 3000)}
 
-\item{quantile_AF}{character. Default "mean"}
+\item{quantile_AF}{e.g. "mean"}
 
-\item{param}{logical. If TRUE => expansions => param-based UHS, else read as-is}
-
-\item{TRo}{numeric vector of return periods for param expansions. If NULL
-(default), uses the original built-in sequence. Used only when \code{param=TRUE}.}
+\item{param}{logical. If TRUE => expansions, else meltdown}
 }
 \value{
 list(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)
 }
 \description{
-Same "rbind blocks for each Vs30" code as before, but now includes an optional
-\code{TRo} argument for user-specified return periods when \code{param=TRUE}.
+This function exactly follows your old code's minimal merges, creating a
+"peak table" (\code{PeakUHS}) for the row at \code{Tn == Tn_PGA}, only
+storing \code{(p, TR, PGA=Sa)}.  We then merge onto the main \code{UHSTable}
+by \code{(p, TR)}.  We do not use \code{allow.cartesian=TRUE}, so no risk
+of extra columns like \code{i.p}, \code{Tn.1}, etc.
+
+Steps:
+\enumerate{
+\item Build \code{AEPTable} from OQ or user
+\item If \code{engine="openquake"}, read disagg into \code{RMwTable}
+\item If \code{param=TRUE}, do \code{(a,b,c)} expansions by \code{(p,Tn)}
+=> \code{UHSTable}
+\item If \code{param=FALSE}, read meltdown UHS from \code{importModel.oqUHS}
+\item Create a \code{PeakUHS} with \code{(p,TR,PGA=Sa)} for \code{Tn==Tn_PGA},
+merge onto main \code{UHSTable} by \code{(p,TR)}
+\item Similarly build a peak table for \code{AEPTable} by \code{p},
+merge to store \code{PGA}
+\item Site amplification => group by \code{(p,Tn)} => merges with base R
+\code{merge(...)} to multiply \code{Sa *= AF} and \code{PGA *= AF}.
+\item Return final \code{AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS,
+        SaTRmodel, RMwTable}.
+}
 }

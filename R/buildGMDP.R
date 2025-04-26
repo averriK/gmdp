@@ -1,40 +1,50 @@
-#' @title Build GMDP (Rbind Approach, No Merges) With Param Col Removal
+#' @title buildGMDP (Old Code Style: Minimal PeakTable, No Extra Columns)
 #'
 #' @description
-#' Same "rbind blocks for each Vs30" code as before, but now includes an optional
-#' `TRo` argument for user-specified return periods when `param=TRUE`.
+#' This function replicates your old code's approach for building UHS from AEP
+#' or meltdown, ensuring no duplicate columns like \code{i.p}, \code{Tn.1}, etc.
+#' **Key points**:
+#' \enumerate{
+#'   \item \code{param=TRUE}: do old \code{(a,b,c)} expansions from AEP, grouping by \code{(p,Tn)}.
+#'   \item \code{param=FALSE}: read meltdown UHS via \code{importModel.oqUHS}.
+#'   \item We create a minimal "peak table" \code{PeakUHS} with only \code{(p,TR,PGA=Sa)}
+#'         for the row where \code{Tn==Tn_PGA}, then merge by \code{(p,TR)} so
+#'         there's no overlap of \code{Tn}.
+#'   \item Site amplification also merges similarly with base R merges, never
+#'         using \code{allow.cartesian=TRUE}.
+#' }
 #'
-#' @param path character. OQ hazard folder
-#' @param IDo string. Identifier (e.g. "gmdp" or "gem")
-#' @param engine c("openquake","user")
-#' @param vs30 numeric vector
-#' @param vref numeric
-#' @param quantile_AF character. Default "mean"
-#' @param param logical. If TRUE => expansions => param-based UHS, else read as-is
-#' @param TRo numeric vector of return periods for param expansions. If NULL
-#'   (default), uses the original built-in sequence. Used only when `param=TRUE`.
+#' @param path character hazard folder
+#' @param IDo  string ID to store in the final tables
+#' @param engine "openquake" or "user"
+#' @param vs30 numeric vector or NULL => no site amp
+#' @param vref numeric reference Vs30 (760 or 3000)
+#' @param quantile_AF character e.g. "mean"
+#' @param param logical. If TRUE => expansions, else meltdown
 #'
 #' @return list(AEPTable, UHSTable, AFmodel_AEP, AFmodel_UHS, SaTRmodel, RMwTable)
-#' @export
 #' @import data.table
-
+#' @export
 buildGMDP <- function(
     path,
-    IDo         = "gmdp",
+    IDo         = "00000000",
     engine      = "openquake",
     vs30        = NULL,
     vref,
     quantile_AF = "mean",
-    param       = FALSE,
-    TRo         = NULL  # user can specify custom TR values
+    param       = FALSE
 )
 {
-  on.exit(expr={rm(list=ls())}, add=TRUE) # your original pattern
+  on.exit(expr={rm(list=ls())}, add=TRUE)
   . <- NULL
+
   AF_q_TARGET <- quantile_AF
 
-  ##### (1) Import AEP from OQ or user
+  #----------------------------------------------------------------------
+  # (1) Build AEP Table (old code style)
+  #----------------------------------------------------------------------
   message("> Build AEP Table...")
+
   TEMP <- tempdir()
   if (dir.exists(TEMP)) {
     unlink(TEMP, recursive=TRUE)
@@ -45,175 +55,204 @@ buildGMDP <- function(
     utils::unzip(zf, exdir=TEMP, junkpaths=TRUE)
   }
 
-  AEP_in <- data.table()
+  AEPTable <- data.table()
   if (engine=="openquake") {
-    AEP_in <- importModel.oqAEP(TEMP, vref)
+    message("> Importing AEP data from openquake...")
+    AEPTable <- importModel.oqAEP(TEMP, vref)
   } else {
-    AEP_in <- importModel.userAEP(path, filename="AEP.xlsx")
+    message("> Importing AEP data from user (AEP.xlsx)...")
+    AEPTable <- importModel.userAEP(path, filename="AEP.xlsx")
   }
-  if (!nrow(AEP_in)) stop("No hazard data read from path=", path)
+  if (!nrow(AEPTable)) {
+    stop("No hazard data read from path=", path)
+  }
 
-  # Possibly read disagg
+  # pick an ITo
+  ITo_val <- unique(AEPTable$ITo)[1]
+  if (is.na(ITo_val)) ITo_val <- 50
+
+  #----------------------------------------------------------------------
+  # (1B) Disagg => RMwTable if engine=="openquake"
+  #----------------------------------------------------------------------
   RMwTable <- NULL
-  message("> Building Disaggregation Hazard Table...")
-  # RMwTable <- importModel.oqRMw(TEMP, ITo=unique(AEP_in$ITo)[1], vref=vref)
+  if (engine=="openquake") {
+    message("> Building Disaggregation Hazard Table from OQ...")
+    RMwTable <- importModel.oqRMw(TEMP, ITo=ITo_val, vref=vref)
+    if (is.null(RMwTable) || !nrow(RMwTable)) {
+      RMwTable <- NULL
+      message("> Disaggregation data not available => RMwTable=NULL")
+    }
+  }
 
-  # (2) param expansions => fitModel.Sa.TR => produce (a,b,c)
-  message("> Fit AEP model from path=", path)
-  Tn_PGA <- AEP_in[Tn >= 0, min(Tn)]
+  #----------------------------------------------------------------------
+  # (2) param=TRUE => expansions, else meltdown
+  #----------------------------------------------------------------------
+  message("> param=", param, " => building UHS from expansions or meltdown")
+
   SaTRmodel <- data.table()
+  UHSTable  <- data.table()
+
+  # old code => Tn_PGA is min Tn >= 0
+  Tn_PGA <- AEPTable[Tn>=0, min(Tn)]
+
   if (param) {
-    message("> expansions => param => try fitModel.Sa.TR")
-    SaTRmodel <- AEP_in[, fitModel.Sa.TR(.SD, TRmin=100, TRmax=10000), by=.(p,Tn)]
-    if (!is.null(SaTRmodel) && nrow(SaTRmodel)) {
-      message("> param expansions => nrow(SaTRmodel)=", nrow(SaTRmodel))
-    } else {
-      message("> no expansions => empty SaTRmodel")
-      SaTRmodel <- data.table()
-    }
-  }
-
-  # (3) Build param-based UHS or read UHS
-  UHS_in <- data.table()
-  if (param && nrow(SaTRmodel)) {
-    message("> param=TRUE => manual expansions => no meltdown")
-
-    # If user provided TRo, use it; else default expansions
-    if (!is.null(TRo) && length(TRo)) {
-      TRo_user <- sort(unique(TRo))
-      message("> Using user-supplied TR: ", paste(TRo_user, collapse=", "))
-    } else {
-      # Original approach: 100–10000 by 25, plus key points
-      S1 <- seq(100, 10000, 25)
-      S2 <- c(475, 500, 975, 1000, 2000, 2475, 5000, 10000)
-      TRo_user <- sort(unique(c(S1, S2)))
-      message("> Using default param expansions: ", paste(TRo_user, collapse=", "))
-    }
-
-    # We'll guess an ITo from AEP_in
-    ITo_val <- unique(AEP_in$ITo)[1]
-    if (is.na(ITo_val)) ITo_val <- 50
-
-    # EXACT STORAGE OF TR:
-    UHS_in <- SaTRmodel[
+    #--------------------------------------------------------------------
+    # (2A) expansions => by=(p,Tn)
+    #--------------------------------------------------------------------
+    message("> expansions => fitModel.Sa.TR => grouping by (p,Tn)")
+    SaTRmodel <- AEPTable[
       ,
-      {
-        if (is.na(a) || is.na(b) || is.na(c)) {
-          return(data.table())
-        }
-        # Compute ground motion at each user-specified TRo_user
-        Sa_calc <- exp(a + b*log(TRo_user) + c*(1/TRo_user))
-
-        data.table(
-          IT  = ITo_val,
-          # We store EXACT user TR, no re-derivation from POE
-          TR  = TRo_user,
-          Sa  = Sa_calc,
-          # AEP + POE come from the same TR, but we do NOT recalc TR from them
-          AEP = 1 / TRo_user,
-          POE = 1 - exp(-ITo_val * (1 / TRo_user))
-        )
-      },
-      by = .(p,Tn,a,b,c,sdLnA)
+      fitModel.Sa.TR(.SD, TRmin=100, TRmax=10000),
+      by=.(p,Tn)
     ]
+    if (!nrow(SaTRmodel)) {
+      message(">> No expansions => empty SaTRmodel => skip UHS build.")
+    } else {
+      message(">> Build param-based UHS => S1+S2 ...")
+      S1 <- seq(100,10000,by=25)
+      S2 <- c(475,500,975,1000,2000,2475,2500,5000,10000)
+      TRset <- sort(unique(c(S1,S2)))
 
-    # Drop param columns
-    dropCols <- c("a","b","c","sdLnA")
-    dropCols <- intersect(dropCols, names(UHS_in))
-    if (length(dropCols)) {
-      UHS_in[, (dropCols) := NULL]
+      UHSTable <- SaTRmodel[
+        ,
+        {
+          if (is.na(a) || is.na(b) || is.na(c)) return(data.table())
+          Sa_ <- exp(a + b*log(TRset) + c*(1/TRset))
+          data.table(
+            p   = p,
+            Tn  = Tn,
+            TR  = TRset,
+            Sa  = Sa_,
+            AEP = 1/TRset,
+            POE = 1 - exp(-ITo_val*(1/TRset))
+          )
+        },
+        by=.(p,Tn,a,b,c,sdLnA)
+      ]
+      UHSTable[, c("a","b","c","sdLnA") := NULL]
     }
-    # Remove accidental .1 duplicates if any
-    dupCols <- grep("\\.1$", names(UHS_in), value=TRUE)
-    if (length(dupCols)) {
-      UHS_in[, (dupCols) := NULL]
-    }
-
-  } else if (param) {
-    message("> param=TRUE => no SaTRmodel => empty UHS_in")
   } else {
-    message("> param=FALSE => read 'as-is' UHS from openquake")
-    UHS_in <- importModel.oqUHS(TEMP)
+    #--------------------------------------------------------------------
+    # (2B) meltdown => importModel.oqUHS
+    #--------------------------------------------------------------------
+    message("> param=FALSE => read meltdown from OQ => importModel.oqUHS")
+    UHSTable <- importModel.oqUHS(TEMP)
+    if (!nrow(UHSTable)) {
+      stop("No meltdown UHS data found for param=FALSE in path=", path)
+    }
   }
 
-  # Tag them with ID, AF=1, etc.
-  if (nrow(UHS_in)) {
-    UHS_in[, `:=`(ID=IDo, AF=1, Vref=vref)]
-  }
-  setnames(AEP_in, old="IT", new="ITo", skip_absent=TRUE)
-  AEP_in[, `:=`(ID=IDo, AF=1, Vref=vref)]
-
-  # (4) define PGA from Tn== Tn_PGA
+  #----------------------------------------------------------------------
+  # (3) define PGA => minimal "peak table" => no duplicate Tn
+  #----------------------------------------------------------------------
   message("> define PGA from Tn_PGA=", Tn_PGA)
-  if (nrow(UHS_in)) {
-    UHS_in[, PGA := ifelse(Tn == Tn_PGA, Sa, NA_real_)]
-  }
-  if (nrow(AEP_in)) {
-    AEP_in[, PGA := ifelse(Tn == Tn_PGA, Sa, NA_real_)]
+
+  # (3A) UHS => build PeakUHS with (p,TR,PGA=Sa) only
+  if (nrow(UHSTable)) {
+    PeakUHS <- UHSTable[Tn==Tn_PGA, .(p, TR, PGA=Sa)]
+    PeakUHS <- unique(PeakUHS, by=c("p","TR"))  # ensure no duplicates
+    # base R merge => no cartesian => no duplicate Tn
+    UHSTable <- merge(
+      x=UHSTable,
+      y=PeakUHS,
+      by=c("p","TR"),
+      all.x=TRUE,
+      suffixes=c("","_peak")
+    )
+    UHSTable[, PGA_peak := NULL]
   }
 
-  ##### (5) Apply site amp -> keep EXACT same TR
-  # We do NOT recalc hazard or TR after we multiply Sa by AF
-  finalUHS <- data.table()
-  finalAEP <- data.table()
+  # (3B) AEP => merges by p
+  PeakAEP <- AEPTable[Tn==Tn_PGA, .(p, PGA=Sa)]
+  PeakAEP <- unique(PeakAEP, by="p")
+  AEPTable <- merge(
+    x=AEPTable,
+    y=PeakAEP,
+    by="p",
+    all.x=TRUE,
+    suffixes=c("","_peak")
+  )
+  AEPTable[, PGA_peak := NULL]
+
+  #----------------------------------------------------------------------
+  # (4) site amplification => group by (p,Tn)
+  #----------------------------------------------------------------------
+  message("> site amplification => group by (p,Tn), minimal merges")
+
   AFmodel_UHS <- data.table()
   AFmodel_AEP <- data.table()
+  finalUHS <- data.table()
+  finalAEP <- data.table()
 
-  if (is.null(vs30) || !length(vs30)) {
-    message("> No site amp => single block => Vs30=vref, AF=1, sdLnAF=0")
-    if (nrow(UHS_in)) {
-      UHS_in[, `:=`(Vs30=vref, AF=1, sdLnAF=0)]
-      finalUHS <- rbind(finalUHS, UHS_in, fill=TRUE)
+  if (!is.null(vs30) && length(vs30)>0) {
+    if (!(vref %in% c(760,3000))) {
+      stop(sprintf(
+        "Error: vref=%g but only 760 or 3000 are valid for site amp", vref
+      ))
     }
-    if (nrow(AEP_in)) {
-      AEP_in[, `:=`(Vs30=vref, AF=1, sdLnAF=0)]
-      finalAEP <- rbind(finalAEP, AEP_in, fill=TRUE)
+    for (Vs_ in vs30) {
+      message(sprintf(">> Fit site amp => Vs30=%.1f", Vs_))
+
+      # (4A) UHS
+      if (nrow(UHSTable)) {
+        AUXu <- UHSTable[
+          ,
+          fitModel.AF.TR(.SD, pga=PGA, q=AF_q_TARGET, Tn=Tn, vs30=Vs_, vref=vref),
+          by=.(p,Tn)
+        ]
+        blockUHS <- merge(
+          x=UHSTable, y=AUXu,
+          by=c("p","Tn"),
+          all.x=TRUE,
+          suffixes=c("","_af")
+        )
+        blockUHS[, `:=`(
+          Sa  = Sa*AF,
+          PGA = PGA*AF,
+          Vs30= Vs_
+        )]
+        AFmodel_UHS <- rbind(AFmodel_UHS, AUXu, use.names=TRUE, fill=TRUE)
+        finalUHS    <- rbind(finalUHS, blockUHS, use.names=TRUE, fill=TRUE)
+      }
+
+      # (4B) AEP
+      AUXa <- AEPTable[
+        ,
+        fitModel.AF.TR(.SD, pga=PGA, q=AF_q_TARGET, Tn=Tn, vs30=Vs_, vref=vref),
+        by=.(p,Tn)
+      ]
+      blockAEP <- merge(
+        x=AEPTable, y=AUXa,
+        by=c("p","Tn"),
+        all.x=TRUE,
+        suffixes=c("","_af")
+      )
+      blockAEP[, `:=`(
+        Sa  = Sa*AF,
+        PGA = PGA*AF,
+        Vs30= Vs_
+      )]
+      AFmodel_AEP <- rbind(AFmodel_AEP, AUXa, use.names=TRUE, fill=TRUE)
+      finalAEP    <- rbind(finalAEP, blockAEP, use.names=TRUE, fill=TRUE)
     }
   } else {
-    if (!(vref %in% c(760,3000))) {
-      stop("Site amp requires vref=760 or 3000. Found: ", vref)
-    }
-    message("> Will produce blocks for each Vs in vs30: ", paste(vs30, collapse=", "))
-    for (Vs_ in vs30) {
-      tmpUHS <- copy(UHS_in)
-      tmpAEP <- copy(AEP_in)
-
-      if (nrow(tmpUHS)) {
-        AUXu <- tmpUHS[
-          ,
-          fitModel.AF.TR(.SD, pga=PGA, q=AF_q_TARGET, Tn=Tn, vs30=Vs_, vref=vref),
-          by=.(p,Tn)
-        ]
-        AFmodel_UHS <- rbind(AFmodel_UHS, AUXu, fill=TRUE)
-
-        # We multiply Sa by AF but DO NOT recalc TR
-        tmpUHS[, Sa     := Sa * AUXu$AF]
-        tmpUHS[, PGA    := PGA * AUXu$AF]
-        tmpUHS[, AF     := AUXu$AF]
-        tmpUHS[, sdLnAF := AUXu$sdLnAF]
-        tmpUHS[, Vs30   := Vs_]
-      }
-      if (nrow(tmpAEP)) {
-        AUXa <- tmpAEP[
-          ,
-          fitModel.AF.TR(.SD, pga=PGA, q=AF_q_TARGET, Tn=Tn, vs30=Vs_, vref=vref),
-          by=.(p,Tn)
-        ]
-        AFmodel_AEP <- rbind(AFmodel_AEP, AUXa, fill=TRUE)
-
-        # Multiply Sa by AF, keep same TR
-        tmpAEP[, Sa     := Sa * AUXa$AF]
-        tmpAEP[, PGA    := PGA * AUXa$AF]
-        tmpAEP[, AF     := AUXa$AF]
-        tmpAEP[, sdLnAF := AUXa$sdLnAF]
-        tmpAEP[, Vs30   := Vs_]
-      }
-
-      finalUHS <- rbind(finalUHS, tmpUHS, fill=TRUE)
-      finalAEP <- rbind(finalAEP, tmpAEP, fill=TRUE)
-    }
+    message(">> No site amp => single block => set AF=1")
+    UHSTable[, `:=`(Vs30=vref, AF=1, sdLnAF=0)]
+    AEPTable[,  `:=`(Vs30=vref, AF=1, sdLnAF=0)]
+    finalUHS <- UHSTable
+    finalAEP <- AEPTable
   }
 
+  #----------------------------------------------------------------------
+  # (5) Tag final ID => old code appended ID last
+  #----------------------------------------------------------------------
+  finalUHS[, ID := IDo]
+  finalAEP[, ID := IDo]
+
+  #----------------------------------------------------------------------
+  # (6) Return => old code structure
+  #----------------------------------------------------------------------
+  message("> Done building GMDP => no duplicated columns => minimal merges with peakTable.")
   return(list(
     AEPTable    = finalAEP,
     UHSTable    = finalUHS,
@@ -223,4 +262,3 @@ buildGMDP <- function(
     RMwTable    = RMwTable
   ))
 }
-

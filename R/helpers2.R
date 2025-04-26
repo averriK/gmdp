@@ -1,15 +1,33 @@
 
 # Helpers:
 
-
 importModel.oqUHS <- function(path) {
-  if (!dir.exists(path)) stop("Path does not exist: ", path)
+  if (!dir.exists(path)) {
+    stop("[ERROR] Path does not exist: ", path)
+  }
+
+  # Define the dictionary from POE => TR
+  poe_to_tr_map <- c(
+    "0.0999" = 475,
+    "0.0800" = 600,
+    "0.0500" = 975,
+    "0.0400" = 1225,
+    "0.0250" = 1975,
+    "0.0200" = 2475,
+    "0.0100" = 4975,
+    "0.0080" = 6225,
+    "0.0050" = 9975,
+    "0.0040" = 12475,
+    "0.0025" = 19975
+  )
+
   tmp_dir <- file.path(path, paste0(".temp_oqUHS_", as.integer(Sys.time())))
   if (dir.exists(tmp_dir)) {
     unlink(tmp_dir, recursive=TRUE, force=TRUE)
   }
   dir.create(tmp_dir, showWarnings=FALSE)
 
+  # Unzip any "uhs-csv.zip"
   zip_files <- list.files(path, pattern="uhs-csv\\.zip$", full.names=TRUE)
   if (length(zip_files)) {
     for (zf in zip_files) {
@@ -17,87 +35,119 @@ importModel.oqUHS <- function(path) {
     }
   }
   search_dir <- if (length(zip_files)) tmp_dir else path
+
+  # Find "uhs.*.csv" files
   uhs_files <- list.files(search_dir, pattern="uhs.*\\.csv$", full.names=TRUE)
   if (!length(uhs_files)) {
     unlink(tmp_dir, recursive=TRUE, force=TRUE)
-    message("No UHS CSV files in: ", path)
+    message("[INFO] No UHS CSV files in: ", path)
     return(data.table())
   }
 
   out_list <- list()
-  iCount   <- 0
+  iCount <- 0
   for (f_ in uhs_files) {
-    header_line <- tryCatch(readLines(f_, n=1L), error=function(e)"")
+    header_line <- tryCatch(readLines(f_, n=1L), error=function(e) "")
     p_val <- .extractQuantileFromHeader(header_line)
     ITval <- .extractInvestigationTime(header_line)
 
     dt_raw <- data.table::fread(f_, skip=1, header=FALSE, blank.lines.skip=TRUE)
     if (!nrow(dt_raw)) next
 
+    # The first row of dt_raw has col names
     col_names <- unlist(dt_raw[1,], use.names=FALSE)
     setnames(dt_raw, col_names)
     dt_raw <- dt_raw[-1]
 
-    # possibly drop lat/lon/depth
+    # Possibly drop lat/lon/depth columns
     dropCols <- intersect(c("lat","lon","depth"), col_names)
-    keepCols <- setdiff(col_names, dropCols)
-    dt_raw <- dt_raw[, ..keepCols]
+    dt_raw <- dt_raw[, !col_names %in% dropCols, with=FALSE]
 
-    # columns like "0.095160~PGA", "0.095160~SA(0.05)", etc.
-    measure_cols <- grep("^[0-9\\.]+~", keepCols, value=TRUE)
-    id_cols <- setdiff(keepCols, measure_cols)
+    # Identify measure cols like "0.099900~PGA", "0.050000~SA(0.1)", etc.
+    measure_cols <- grep("^[0-9\\.]+~", names(dt_raw), value=TRUE)
+    id_cols      <- setdiff(names(dt_raw), measure_cols)
 
+    # Convert wide->long so each row is one combination of POE, Tn, Sa
     dt_long <- melt(
       dt_raw,
-      id.vars       = id_cols,
-      measure.vars  = measure_cols,
-      variable.name = "col_label",
-      value.name    = "Sa",
+      id.vars        = id_cols,
+      measure.vars   = measure_cols,
+      variable.name  = "col_label",
+      value.name     = "Sa",
       variable.factor=FALSE
     )
     dt_long[, Sa := as.numeric(Sa)]
 
-    # parse (POE, Tn) from "0.095160~SA(0.05)" or "~PGA"
+    # We parse out (POE, Tn_m) from e.g. "0.099900~SA(0.05)" or "~PGA"
     parsed <- safeParseUHS(dt_long$col_label)
     dt_long[, `:=`(POE = parsed[[1]], Tn_m = parsed[[2]])]
     dt_long[, col_label := NULL]
 
-    dt_long <- dt_long[!is.na(POE) & !is.na(Tn_m) & POE<1]
+    # Keep only valid rows
+    dt_long <- dt_long[!is.na(POE) & !is.na(Tn_m) & POE < 1]
 
-    if (!is.na(ITval) && ITval>0) {
-      dt_long[, AEP := -log(1 - POE)/ITval]
-      dt_long[, TR  := -ITval / log(1 - POE)]
-    } else {
-      dt_long[, `:=`(AEP=NA_real_, TR=NA_real_)]
-    }
-
-    # rename Tn_m -> Tn if needed
+    # If meltdown doesn't define Tn, rename Tn_m -> Tn
     if (!"Tn" %in% names(dt_long)) {
       setnames(dt_long, "Tn_m", "Tn")
     } else {
       dt_long[, Tn_m := NULL]
     }
-    # if no p col, set from p_val
+
+    # If meltdown doesn't define fractile p, use p_val
     if (!"p" %in% names(dt_long)) {
       dt_long[, p := p_val]
     }
-    dt_long[, IT := ITval]
 
-    # PATCH: round TR to 0 decimals
-    dt_long[, TR := round(TR)]
+    # If meltdown doesn't define TR or AEP, we fill them from the dictionary
+    #   1) string-match POE to the dictionary
+    #   2) fallback if no match
+    dt_long[, POE_str := format(POE, nsmall=4)]
+    dt_long[, TR_dict := poe_to_tr_map[POE_str]]
+
+    # If meltdown gave a TR column, we keep it
+    # else we set TR from TR_dict
+    if (!"TR" %in% names(dt_long)) {
+      dt_long[, TR := TR_dict]
+    } else {
+      # meltdown has a TR => we do not overwrite
+      # but let's ensure it's numeric
+      dt_long[, TR := as.numeric(TR)]
+    }
+
+    # If meltdown gave an AEP column, keep it
+    # else define AEP=1/TR if TR is known
+    if (!"AEP" %in% names(dt_long)) {
+      dt_long[, AEP := ifelse(!is.na(TR), 1/TR, NA_real_)]
+    } else {
+      dt_long[, AEP := as.numeric(AEP)]
+    }
+
+    # If meltdown didn't have TR or we don't have a dictionary match => TR=NA => AEP=NA
+    # That might happen if OQ used a different POE, e.g. 0.07 => no dictionary entry
+
+    # drop helper columns
+    dt_long[, c("TR_dict","POE_str") := NULL]
+
+    # store the investigation time
+    dt_long[, IT := ITval]
 
     out_list[[ iCount <- iCount + 1 ]] <- dt_long
   }
 
   unlink(tmp_dir, recursive=TRUE, force=TRUE)
-  DT <- data.table::rbindlist(out_list, fill=TRUE, use.names=TRUE)
+
+  # Combine into one DT
+  DT <- rbindlist(out_list, fill=TRUE, use.names=TRUE)
   if (!nrow(DT)) return(DT)
 
+  # Reorder columns
   final_cols <- c("p","Tn","POE","AEP","TR","IT","Sa")
   keepC <- intersect(final_cols, names(DT))
   setcolorder(DT, keepC)
+
   return(DT[])
 }
+
 
 
 
