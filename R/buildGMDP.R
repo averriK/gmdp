@@ -49,7 +49,7 @@ buildGMDP <- function(path,
   message("> Re-mesh hazard data on a uniform TR grid (no param-fitting)...")
 
   COLS <- setdiff(colnames(AEPTable),c("Sa","POE","AEP","TR"))
-  UHSTable <- AEPTable[Tn>=0 , remeshGroup(.SD, TRo),       by = COLS    ]
+  UHSTable <- AEPTable[Tn!=-1 , remeshGroup(.SD, TRo),       by = COLS    ]
 
 
   # (4) Merge Tn=0 => PGA into UHSTable

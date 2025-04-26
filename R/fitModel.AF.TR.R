@@ -185,7 +185,7 @@ fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
   sdLnAF <- sqrt(sdL^2 + sdI^2 + sdNL^2)
   if(q!="mean"){
     p <- as.numeric(q)
-    beta <- qnorm(p=p,sd=sdLnAF) |> exp()
+    beta <- stats::qnorm(p=p,sd=sdLnAF) |> exp()
   } else {
     beta <- exp(1/2*sdLnAF^2)
   }
