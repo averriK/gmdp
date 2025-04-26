@@ -189,3 +189,58 @@ importModel.userAEP <- function(path = NULL, filename = "AEP.xlsx") {
   return(AT[])
 }
 
+reMeshCurve <- function(TRi, Sai, TRo) {
+  # TRi : numeric vector of original return periods
+  # Sai : numeric vector of spectral acceleration or hazard values
+  # TRo : numeric vector of new return periods to interpolate onto
+
+  # We assume TRi and Sai are sorted or will handle sorting outside.
+  # (But you can also sort them here if you like.)
+
+  nOut <- length(TRo)
+  Sa_star <- numeric(nOut)
+
+  for (j in seq_len(nOut)) {
+    trT <- TRo[j]
+    if (trT <= TRi[1]) {
+      # Below the smallest known period => clamp to first value
+      Sa_star[j] <- Sai[1]
+    } else if (trT >= TRi[length(TRi)]) {
+      # Above the largest known period => clamp to last value
+      Sa_star[j] <- Sai[length(Sai)]
+    } else {
+      # Inside the known range => do log interpolation
+      idx_high <- which(TRi >= trT)[1]
+      idx_low  <- idx_high - 1
+      frac     <- (trT - TRi[idx_low]) / (TRi[idx_high] - TRi[idx_low])
+      val_log  <- log(Sai[idx_low]) + frac * (log(Sai[idx_high]) - log(Sai[idx_low]))
+      Sa_star[j] <- exp(val_log)
+    }
+  }
+  Sa_star
+}
+
+remeshGroup <- function(.SD, TRo) {
+  # Verify we have at least these columns:
+  if (!all(c("TR", "Sa") %in% colnames(.SD))) {
+    stop("'.SD' must contain columns 'TR' and 'Sa'.")
+  }
+
+  # Sort by TR
+  data.table::setorder(.SD, TR)
+
+  # Filter out invalid or non-positive TR
+  .SD <- .SD[is.finite(TR) & TR > 0]
+  if (nrow(.SD) < 2) {
+    # Not enough points for interpolation
+    return(NULL)  # or stop() if you prefer
+  }
+
+  # Do the interpolation
+  TRi <- .SD$TR
+  Sai <- .SD$Sa
+  Sa_star <- reMeshCurve(TRi, Sai, TRo)
+
+  # Return only the new TR & Sa columns (one row per TRo)
+  data.table(TR = TRo, Sa = Sa_star)
+}

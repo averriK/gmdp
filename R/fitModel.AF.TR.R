@@ -1,29 +1,7 @@
 
-#' Amplification Factor AF, from Stewart Et Al. 2016
-#'
-#' @param .x data.table. Input data.table
-#' @param pga Double. PGA in g
-#' @param q Double. quantile
-#' @param Tn Double. Natural Period
-#' @param vs30 Double. Vs30 in m/s
-#' @param vref Double. Reference Vs30 in m/s
-#' @param Vl Double. Lower limit Vs30 in m/s
-#' @param Vu Double. Upper limit Vs30 in m/s
-#'
-#' @return data.table
-#' @export fitModel.AF.TR
-#'
-#' @import data.table
-#' @importFrom stats lm
-#' @importFrom stats predict.lm
-#' @importFrom stats approxfun
-#'
-#' @examples
-#'
 
 fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
 
-  on.exit(expr = {    rm(list = ls())  }, add = TRUE)
 
   OK <- length(vref) == 1 & length(vs30) == 1
   OK <- OK & (vref %in% c(3000, 760))
@@ -35,19 +13,8 @@ fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
       PGA=pga,
       Vref = vref,
       Vs30 = vref,
-      # SID = Vs30toSID(vref),
-      muLnPGA = 0,
-      muL = 0,
-      muI = 0,
-      muNL = 0,
-      muLnAF = 0,
       AF = 1,
-      sdL = 0,
-      sdI = 0,
-      sdNL = 0,
-      # SM = "openquake",
       sdLnAF = 0
-
     )
     return(DT)
   }
@@ -226,17 +193,7 @@ fitModel.AF.TR <- function(.x,pga,Tn, vs30, vref, q=0.50,Vl = 200, Vu = 2000) {
     PGA = pga,
     Vref = vref,
     Vs30 = vs30,
-    # SID = Vs30toSID(vs30),
-    muLnPGA = muLnPGA,
-    muL = muL,
-    muI = muI,
-    muNL = muNL,
-    muLnAF = muLnAF,
     AF = exp(muLnAF)*beta,
-    sdL = sdL,
-    sdI = sdI,
-    sdNL = sdNL,
-    # SM = "gmdp",
     sdLnAF = sdLnAF
 
   )

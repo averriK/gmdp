@@ -2,7 +2,8 @@
 devtools::load_all()
 UHSTable <- data.table()
 AEPTable <- data.table()
-Vs30_TARGET <- c(200,300, 400, 500, 600, 700, 800, 900,1000, 1100)
+# Vs30_TARGET <- c(200,300, 400, 500, 600, 700, 800, 900,1000, 1100)
+Vs30_TARGET <- c(400,500)
 
 # --- (1) Build UHS from Vref=760 using GEM model => "gmdp"
 if (dir.exists("oq/output/gem/760")) {
