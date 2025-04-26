@@ -1,17 +1,18 @@
 # calling_script.R
-
+devtools::load_all()
 UHSTable <- data.table()
 AEPTable <- data.table()
+# Vs30_TARGET <- c(200,300, 400, 500, 600, 700, 800, 900,1000, 1100)
+Vs30_TARGET <- c(400,500)
 
 # --- (1) Build UHS from Vref=760 using GEM model => "gmdp"
-if (BUILD_ST17 == TRUE && dir.exists("oq/output/gem/760")) {
+if (dir.exists("oq/output/gem/760")) {
   Vs30_MODEL <- Vs30_TARGET
   GMDP <- buildGMDP(
     path   = "oq/output/gem/760/",
     vref   = 760,
     vs30   = Vs30_MODEL,  # site amp
-    IDo    = "gmdp",
-    param  = TRUE  # expansions on
+    IDo    = "gmdp"
   )
 
   UHSTable <- rbind(UHSTable, GMDP$UHSTable) |> unique()
@@ -29,8 +30,6 @@ if (length(Vs30_GEM) > 0) {
         vref   = Vs,
         vs30   = NULL,   # skip site amp
         IDo    = "gem"
-        #TRo    = TR_TARGET,
-        #param  = TRUE    # expansions or read as-is as you prefer
       )
       UHSTable <- rbind(UHSTable, GMDP$UHSTable) |> unique()
       AEPTable <- rbind(AEPTable, GMDP$AEPTable) |> unique()
