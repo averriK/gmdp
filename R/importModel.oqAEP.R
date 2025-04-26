@@ -1,101 +1,65 @@
-#' Import Annual Exceedance Probabiliies (AEP) from openquake zip files.
-#'
-#' @param path character. Path to the folder containing the hazard and quantile curves
-#' @param vref numeric. Reference Vs30 in m/s
-#'
-#' @return A data.table with the following columns:
-#' @export importModel.oqAEP
-#'
-#' @examples
-#' @import data.table
-#' @importFrom stringr str_remove
-#' @importFrom stringr str_split
-#'
 importModel.oqAEP <- function(path, vref) {
-    . <- NULL
+  . <- NULL
+  DT <- data.table()
 
-    DT <- data.table::data.table()
-    PATH <- path
-    FILES <- list.files(path = PATH, pattern = "quantile_curve")
-    FILES <- c(FILES, list.files(path = PATH, pattern = "hazard_curve"))
-    DATAPATH <- data.table::data.table(name = FILES, datapath = file.path(PATH, FILES))
-    NR <- nrow(DATAPATH)
-    if (NR == 0) {
-        stop("No files found")
-        return(NULL)
-    }
+  # find hazard files
+  FILES <- c(
+    list.files(path, pattern="quantile_curve"),
+    list.files(path, pattern="hazard_curve")
+  )
+  if (length(FILES) == 0) {
+    stop("No hazard_curve or quantile_curve files found in ", path)
+  }
 
-    # Read job.ini (if exists)
-    # IT <- ITo# gmdp.ini$IT
+  DATAPATH <- data.table(
+    name = FILES,
+    datapath = file.path(path, FILES)
+  )
 
-    for (k in seq_len(NR)) {
-        FILE <- DATAPATH$name[k]
-        #
-        AUX <- data.table::fread(file = DATAPATH$datapath[k], skip = 1, header = FALSE, blank.lines.skip = TRUE)
-        COLS <- unlist(AUX[1]) |> as.vector()
-        data.table::setnames(AUX, COLS)
-        VARS <- setdiff(COLS, grep(COLS, pattern = "poe-", value = TRUE))
-        DATA <- melt(data = AUX[-1], id.vars = VARS, variable = "Sa", value = "POE")
-        DATA <- DATA[, .(POE = as.numeric(POE), Sa = gsub(x = Sa, pattern = "poe-", replacement = "") |> as.numeric()), by = VARS]
+  for (k in seq_len(nrow(DATAPATH))) {
+    fcsv <- DATAPATH$datapath[k]
 
+    # read header line
+    HEADER <- readLines(fcsv, n=1)
 
+    p   <- .extractQuantileFromHeader(HEADER)
+    ITo <- .extractInvestigationTime(HEADER)
+    Tn  <- .extractTnFromHeader(HEADER)  # 0 if 'PGA', -1 if 'PGV', numeric if 'SA(x)'
 
-        # parse HEADER ----
-        p <- NULL
-        HEADER <- data.table::fread(file = DATAPATH$datapath[k], nrows = 1, header = FALSE) |>
-            str_split(",") |>
-            unlist()
-        HEADER <- HEADER[HEADER != "NA" & HEADER != "#"]
+    # read the file skipping first line
+    AUX <- data.table::fread(fcsv, skip=1, header=FALSE, blank.lines.skip=TRUE)
+    COLS <- unlist(AUX[1]) |> as.vector()
+    data.table::setnames(AUX, COLS)
+    AUX <- AUX[-1]
 
-        AUX <- grep(HEADER, pattern = "kind='quantile-", value = TRUE)
-        if (length(AUX) > 0) {
-            p <- str_remove(AUX, pattern = "kind='quantile-") |>
-                stringr::str_extract(pattern = "([0-9]+(\\.[0-9]+)?)") |>
-                as.numeric()
-        }
-        if (any(grepl(HEADER, pattern = "kind='mean'"))) {
-            p <- "mean"
-        }
-        if (is.null(p)) {
-            stop("Internal error: Unknown quantile \n %s", paste(HEADER, sep = ""))
-        }
+    # meltdown on "poe-xxx"
+    poeCols <- grep("poe-", COLS, value=TRUE)
+    DATA <- data.table::melt(
+      data = AUX,
+      id.vars = c("lon", "lat", "depth"),
+      measure.vars = poeCols,
+      variable.name = "SaCol",
+      value.name    = "POE"
+    )
+    # parse numeric Sa from 'poe-xxx'
+    DATA[, Sa := as.numeric(gsub("^poe-", "", SaCol))]
+    DATA[, POE := as.numeric(POE)]
 
+    # define AEP / TR
+    DATA[, AEP := -log(1-POE)/ITo]
+    DATA[, TR  := -ITo/log(1-POE)]
 
-        ITo <- NULL
-        AUX <- grep(HEADER, pattern = "investigation_time=", value = TRUE)
-        if (length(AUX) > 0) {
-            ITo <- str_remove(AUX, pattern = "investigation_time=") |>
-                stringr::str_extract(pattern = "([0-9]+(\\.[0-9]+)?)") |>
-                as.numeric()
-        }
-        if (is.null(ITo)) {
-            stop("Internal error: Unknown investigation time:\n %s", paste(HEADER, sep = ""))
-        }
+    DATA[, `:=`(ITo=ITo, Tn=Tn, p=p)]
 
+    DT <- data.table::rbindlist(list(DT, DATA), use.names=TRUE)
+  }
 
-        Tn <- NULL
-        AUX <- grep(HEADER, pattern = "imt='SA\\(([0-9]+(\\.[0-9]+)?)\\)'", value = TRUE)
-        if (length(AUX) > 0) {
-            Tn <- str_remove(AUX, pattern = "imt='SA") |>
-                stringr::str_extract(pattern = "([0-9]+(\\.[0-9]+)?)") |>
-                as.numeric()
-        }
-        if (any(grepl(HEADER, pattern = "imt='PGA'"))) {
-            Tn <- 0
-        }
-        if (any(grepl(HEADER, pattern = "imt='PGV'"))) {
-            Tn <- -1
-        }
-        if (is.null(Tn)) {
-            stop("Internal error: Unknown Tn:\n %s", paste(HEADER, sep = ""))
-        }
+  # AFTER building the table, do final filtering as old code:
+  # remove infinite or NA TR, remove Tn=-1 if ignoring PGV
+  # (or maybe you used to do it inside the function.)
+  DT <- DT[ is.finite(TR) & TR>0 & !is.na(TR) ]
+  # If ignoring PGV lines:
+  DT <- DT[Tn != -1]
 
-        DATA <- DATA[, .(lat, lon, depth, ITo = ITo, Tn = Tn, p = p, Sa = Sa, POE = POE, AEP = -log(1 - POE) / ITo, TR = -ITo / log(1 - POE))]
-        DT <- data.table::rbindlist(list(DATA, DT))
-    }
-    # browser()
-    # ignore PGV
-    # DT <- DT[TR != Inf & AEP != Inf & AEP != 0 & Tn!=-1]
-    DT <- DT[Tn != -1]
-    return(DT[])
+  return(DT[])
 }
