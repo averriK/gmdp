@@ -1,6 +1,6 @@
 Package: gmdp
 Title: Ground-Motion Design Parameters
-Version: 0.6.0
+Version: 0.6.1
 Authors@R: 
     person("Alejandro", "Verri Kozlowski", , "averri@fi.uba.ar", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-8535-1170"))
@@ -13,9 +13,8 @@ Imports:
     stats,   
     readxl,
     stringr,
-    randomForest,
-    rpart,
-    utils
+    utils,
+    dsra
 Depends: 
     R (>= 3.5)
 LazyData: true
