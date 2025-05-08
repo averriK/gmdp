@@ -71,12 +71,12 @@ buildGMDP <- function(path,
                     utils::unzip(.files, junkpaths = TRUE, exdir = TEMP)
 
                     # Attempt to parse hazard data inside TEMP
-                    chunkAEP <- importModel.oqAEP(path = TEMP, vref = vref)
+                    AUX <- importModel.oqAEP(path = TEMP, vref = vref)
 
                     if (is.null(AEPTable)) {
-                        AEPTable <- chunkAEP
+                        AEPTable <- AUX
                     } else {
-                        AEPTable <- data.table::rbindlist(list(AEPTable, chunkAEP), use.names = TRUE, fill = TRUE)
+                        AEPTable <- data.table::rbindlist(list(AEPTable, AUX), use.names = TRUE, fill = TRUE)
                     }
                 },
                 error = function(e) {
@@ -157,8 +157,10 @@ buildGMDP <- function(path,
     }
 
     message("> Update UHSTable ...")
-    AEPTable[, ID := IDo]
+
     UHSTable[, ID := IDo]
+    message("> Update AEPTable ...")
+    AEPTable[, `:=`(ID = IDo, Vref = vref, Vs30 = vref)]
 
     return(list(
         AEPTable = AEPTable,
