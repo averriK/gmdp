@@ -143,7 +143,7 @@ buildGMDP <- function(path,
         for (Vs in vs30) {
             message(sprintf("> Fit UHS Site Response for Vs30 %.1f...", Vs))
             COLS <- setdiff(colnames(UHSTable), c("Sa", "PGA", "AEP", "POE"))
-            AUX <- UHSTable[, dsra::fitModel.AF.TR(.SD, pga = PGA, q = q_AF, Tn = Tn, vs30 = Vs, vref = vref), by = COLS]
+            AUX <- UHSTable[, fitModel.AF.TR(.SD, pga = PGA, q = q_AF, Tn = Tn, vs30 = Vs, vref = vref), by = COLS]
             AFmodel <- data.table::rbindlist(list(AFmodel, AUX), use.names = TRUE)
 
             message(sprintf("> Fit AEP Site Response for Vs30 %.1f...", Vs))
