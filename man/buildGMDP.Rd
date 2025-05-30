@@ -11,7 +11,7 @@ buildGMDP(
   vs30 = NULL,
   vref = 760,
   TRo = seq(400, 10000, by = 25),
-  q_AF = "mean"
+  NS = 100
 )
 }
 \arguments{
@@ -27,7 +27,7 @@ buildGMDP(
 
 \item{TRo}{Numeric vector. Target return periods for uniform hazard spectra. Default is seq(400,10000,by=25).}
 
-\item{q_AF}{Character. Quantile for amplification factors. Default is "mean".}
+\item{NS}{integer ≥ 1 – Monte-Carlo samples per model (default 30).}
 }
 \value{
 A list containing:

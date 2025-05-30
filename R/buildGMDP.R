@@ -11,7 +11,7 @@
 #' @param vs30 Numeric vector. Target Vs30 values for site response analysis. If NULL, no site response is performed.
 #' @param vref Numeric. Reference Vs30 value. Default is 760 m/s.
 #' @param TRo Numeric vector. Target return periods for uniform hazard spectra. Default is seq(400,10000,by=25).
-#' @param q_AF Character. Quantile for amplification factors. Default is "mean".
+#' @param NS    integer ≥ 1 – Monte-Carlo samples per model (default 30).
 #'
 #' @return A list containing:
 #' \itemize{
@@ -42,130 +42,150 @@ buildGMDP <- function(path,
                       vs30 = NULL,
                       vref = 760,
                       TRo = seq(400, 10000, by = 25),
-                      q_AF = "mean") {
-    message("> Build AEP Table...")
-    AEPTable <- NULL
+                      NS=100) {
+  message("> Build AEP Table...")
+  AEPTable <- NULL
 
-    if (engine == "openquake") {
-        message("> Unzip OQ data ...")
+  if (engine == "openquake") {
+    message("> Unzip OQ data ...")
 
-        # Prepare a temp directory. We'll reuse it for each .zip (one at a time).
-        TEMP <- tempdir()
-        if (dir.exists(TEMP)) {
-            unlink(TEMP, recursive = TRUE)
-            TEMP <- tempdir()
+    # Prepare a temp directory. We'll reuse it for each .zip (one at a time).
+    TEMP <- tempdir()
+    if (dir.exists(TEMP)) {
+      unlink(TEMP, recursive = TRUE)
+      TEMP <- tempdir()
+    }
+
+    FILES <- list.files(path, pattern = "\\.zip$", full.names = TRUE)
+    if (!length(FILES)) {
+      stop("No .zip files found in ", path)
+    }
+
+    for (.files in FILES) {
+      message("> Import AEP data from openquake from: ", .files)
+      tryCatch(
+        {
+          unlink(TEMP, recursive = TRUE)
+          dir.create(TEMP, showWarnings = FALSE)
+
+          utils::unzip(.files, junkpaths = TRUE, exdir = TEMP)
+
+          # Attempt to parse hazard data inside TEMP
+          AUX <- importModel.oqAEP(path = TEMP, vref = vref)
+
+          if (is.null(AEPTable)) {
+            AEPTable <- AUX
+          } else {
+            AEPTable <- data.table::rbindlist(list(AEPTable, AUX), use.names = TRUE, fill = TRUE)
+          }
+        },
+        error = function(e) {
+          message(">> Skipping file: ", .files)
+          message("   Reason: ", e$message)
         }
-
-        FILES <- list.files(path, pattern = "\\.zip$", full.names = TRUE)
-        if (!length(FILES)) {
-            stop("No .zip files found in ", path)
-        }
-
-        for (.files in FILES) {
-            message("> Import AEP data from openquake from: ", .files)
-            tryCatch(
-                {
-                    unlink(TEMP, recursive = TRUE)
-                    dir.create(TEMP, showWarnings = FALSE)
-
-                    utils::unzip(.files, junkpaths = TRUE, exdir = TEMP)
-
-                    # Attempt to parse hazard data inside TEMP
-                    AUX <- importModel.oqAEP(path = TEMP, vref = vref)
-
-                    if (is.null(AEPTable)) {
-                        AEPTable <- AUX
-                    } else {
-                        AEPTable <- data.table::rbindlist(list(AEPTable, AUX), use.names = TRUE, fill = TRUE)
-                    }
-                },
-                error = function(e) {
-                    message(">> Skipping file: ", .files)
-                    message("   Reason: ", e$message)
-                }
-            )
-        }
-    } else if (engine == "user") {
-        message("> Unzip USER data ...")
-        message("> Import AEP data from user ...")
-        AEPTable <- tryCatch(
-            {
-                importModel.userAEP(path, filename = "AEP.xlsx")
-            },
-            error = function(e) {
-                stop("Error in user-supplied AEP data: ", e$message)
-            }
-        )
-    } else {
-        stop("Unknown engine: ", engine)
+      )
     }
+  } else if (engine == "user") {
+    message("> Unzip USER data ...")
+    message("> Import AEP data from user ...")
+    AEPTable <- tryCatch(
+      {
+        importModel.userAEP(path, filename = "AEP.xlsx")
+      },
+      error = function(e) {
+        stop("Error in user-supplied AEP data: ", e$message)
+      }
+    )
+  } else {
+    stop("Unknown engine: ", engine)
+  }
 
-    # If we have nothing after processing all files, stop
-    if (is.null(AEPTable) || !nrow(AEPTable)) {
-        stop("No valid AEP data found after processing all files in path: ", path)
-    }
+  # If we have nothing after processing all files, stop
+  if (is.null(AEPTable) || !nrow(AEPTable)) {
+    stop("No valid AEP data found after processing all files in path: ", path)
+  }
 
-    ITo <- unique(AEPTable$ITo)[1]
+  ITo <- unique(AEPTable$ITo)[1]
 
-    # (2) Disagg
-    RMwTable <- NULL
-    message("> Building Disaggregation Hazard Table...")
-    if (engine == "openquake") {
-        message("> Import Disaggregation data from openquake...")
-        tryCatch(
-            {
-                RMwTable <- importModel.oqRMw(path = TEMP, ITo = ITo, vref = vref)
-            },
-            error = function(e) {
-                message(">> Skipping disagg data due to error: ", e$message)
-            }
-        )
-    }
-    if (!is.null(RMwTable)) {
-        RMwTable[, `:=`(SID = Vs30toSID(vref), Vs30 = vref, SM = engine, IT = ITo)]
-    } else {
-        message("> Disaggregation data not available.")
-    }
+  # (2) Disagg
+  RMwTable <- NULL
+  message("> Building Disaggregation Hazard Table...")
+  if (engine == "openquake") {
+    message("> Import Disaggregation data from openquake...")
+    tryCatch(
+      {
+        RMwTable <- importModel.oqRMw(path = TEMP, ITo = ITo, vref = vref)
+      },
+      error = function(e) {
+        message(">> Skipping disagg data due to error: ", e$message)
+      }
+    )
+  }
+  if (!is.null(RMwTable)) {
+    RMwTable[, `:=`(SID = Vs30toSID(vref), Vs30 = vref, SM = engine, IT = ITo)]
+  } else {
+    message("> Disaggregation data not available.")
+  }
 
-    # (3) Remesh
-    message("> Re-mesh hazard data on a uniform TR grid (no param-fitting)...")
-    COLS <- setdiff(colnames(AEPTable), c("Sa", "POE", "AEP", "TR"))
-    UHSTable <- AEPTable[Tn != -1, remeshGroup(.SD, TRo), by = COLS]
+  # (3) Remesh
+  message("> Re-mesh hazard data on a uniform TR grid (no param-fitting)...")
+  COLS <- setdiff(colnames(AEPTable), c("Sa", "POE", "AEP", "TR"))
+  UHSTable <- AEPTable[Tn != -1, remeshGroup(.SD, TRo), by = COLS]
 
-    # (4) Merge Tn=0 => PGA
-    message("> Merge Tn=0 => PGA into UHSTable ...")
-    COLS <- setdiff(colnames(UHSTable), c("Sa", "Tn", "AEP", "POE"))
-    UHSTable[, PGA := Sa[Tn == 0], by = COLS]
 
-    AFmodel <- data.table::data.table()
+  ## ------------------------------------------------------------------------
+  ##  Site-response scaling with fitSaF()
+  ## ------------------------------------------------------------------------
 
-    if (!is.null(vs30) && vref %in% c(760, 3000)) {
-        for (Vs in vs30) {
-            message(sprintf("> Fit UHS Site Response for Vs30 %.1f...", Vs))
-            COLS <- setdiff(colnames(UHSTable), c("Sa", "PGA", "AEP", "POE"))
-            AUX <- UHSTable[, dsra::fitModel.AF.TR(.SD, pga = PGA, q = q_AF, Tn = Tn, vs30 = Vs, vref = vref), by = COLS]
-            AFmodel <- data.table::rbindlist(list(AFmodel, AUX), use.names = TRUE)
+  if (!is.null(vs30) && vref %in% c(760, 3000)) {
 
-            message(sprintf("> Fit AEP Site Response for Vs30 %.1f...", Vs))
-        }
-        COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(AFmodel)]
-        UHSTable <- AFmodel[UHSTable, on = COLS][, `:=`(Sa = AF * Sa, PGA = AF * PGA)] |> unique()
-    }
-
-    if (is.null(vs30)) {
-        UHSTable[, `:=`(Vref = vref, Vs30 = vref, AF = 1, sdLnAF = 0)]
-    }
-
-    message("> Update UHSTable ...")
-
-    UHSTable[, ID := IDo]
-    message("> Update AEPTable ...")
-    AEPTable[, `:=`(ID = IDo, Vref = vref, Vs30 = vref)]
-
-    return(list(
-        AEPTable = AEPTable,
-        UHSTable = UHSTable,
-        AFmodel  = AFmodel,
-        RMwTable = RMwTable
+    message(sprintf(
+      "> Fit UHS site response for Vs30 values: %s …",
+      paste(vs30, collapse = ", ")
     ))
+
+    ## -- 1.  Compute SaF for every (TR, Vs30, Tn, p) ----------------------
+    SaFTable <- fitSaF(
+      uhs  = UHSTable[, .(TR, Sa, Tn, p)],   # columns fitSaF requires
+      vs30 = vs30,                           # scalar or vector
+      NS   = NS,
+      vref = vref
+    )
+    ## SaFTable columns: TR, Vs30, Vref, Tn, p, SaF
+
+    ## -- 2.  Join SaF back to UHSTable and scale motions -----------------
+    by_cols <- c("TR", "Tn", "p")             # common keys
+    data.table::setkeyv(UHSTable, by_cols)
+    data.table::setkeyv(SaFTable,  by_cols)
+
+    UHSTable <- SaFTable[UHSTable, allow.cartesian = TRUE][
+      , `:=`(
+        AF   = SaF / Sa,   # amplification factor
+        Sa   = SaF,        # updated spectral acceleration
+        Vref = vref        # propagate reference velocity
+      )
+    ][]
+  }
+
+  ## ------------------------------------------------------------------------
+  ##  Rock-reference shortcut  (unchanged logic)
+  ## ------------------------------------------------------------------------
+  if (is.null(vs30)) {
+    UHSTable[, `:=`(Vref = vref, Vs30 = vref, AF = 1)]
+  }
+
+
+
+  message("> Update UHSTable ...")
+
+  UHSTable[, ID := IDo]
+  message("> Update AEPTable ...")
+  AEPTable[, `:=`(ID = IDo, Vref = vref, Vs30 = vref)]
+
+  return(list(
+    AEPTable = AEPTable,
+    UHSTable = UHSTable,
+    # AFmodel  = AFmodel,
+    RMwTable = RMwTable
+  ))
 }
