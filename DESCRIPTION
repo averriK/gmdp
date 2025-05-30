@@ -14,7 +14,7 @@ Imports:
     readxl,
     stringr,
     utils,
-    dsra
+    newmark
 Depends: 
     R (>= 3.5)
 LazyData: true

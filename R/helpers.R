@@ -146,7 +146,7 @@ importModel.userAEP <- function(path = NULL, filename = "AEP.xlsx") {
 #'
 #' @return A data.table containing the annual exceedance probability data.
 #'
-#' @importFrom data.table data.table fread setnames rbind
+#' @importFrom data.table data.table fread setnames
 #' @importFrom utils unzip
 #' @importFrom stringr str_extract
 #'

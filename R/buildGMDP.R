@@ -21,9 +21,8 @@
 #'   \item RMwTable: Magnitude-Distance disaggregation table (if available)
 #' }
 #'
-#' @importFrom data.table data.table setdiff colnames unique rbindlist
+#' @importFrom data.table data.table rbindlist
 #' @importFrom utils unzip
-#' @importFrom stats setNames
 #'
 #' @examples
 #' \dontrun{
@@ -113,9 +112,7 @@ buildGMDP <- function(path,
   if (engine == "openquake") {
     message("> Import Disaggregation data from openquake...")
     tryCatch(
-      {
-        RMwTable <- importModel.oqRMw(path = TEMP, ITo = ITo, vref = vref)
-      },
+      {RMwTable <- importModel.oqRMw(path = TEMP, ITo = ITo, vref = vref)},
       error = function(e) {
         message(">> Skipping disagg data due to error: ", e$message)
       }
@@ -134,35 +131,39 @@ buildGMDP <- function(path,
 
 
   ## ------------------------------------------------------------------------
-  ##  Site-response scaling with fitSaF()
+  ##  Site-response scaling with fitSaF()  (replaces previous block)
   ## ------------------------------------------------------------------------
-
   if (!is.null(vs30) && vref %in% c(760, 3000)) {
 
     message(sprintf(
-      "> Fit UHS site response for Vs30 values: %s …",
+      "> Fit UHS site response for Vs30 values: %s ...",
       paste(vs30, collapse = ", ")
     ))
 
     ## -- 1.  Compute SaF for every (TR, Vs30, Tn, p) ----------------------
-    SaFTable <- fitSaF(
-      uhs  = UHSTable[, .(TR, Sa, Tn, p)],   # columns fitSaF requires
-      vs30 = vs30,                           # scalar or vector
+    SaFTable <- newmark::fitSaF(
+      uhs  = UHSTable[, .(TR, Sa, Tn, p)],   # minimal columns
+      vs30 = vs30,                           # scalar OR vector
       NS   = NS,
       vref = vref
     )
-    ## SaFTable columns: TR, Vs30, Vref, Tn, p, SaF
+    ## SaFTable cols: TR, Vs30, Vref, Tn, p, SaF
 
-    ## -- 2.  Join SaF back to UHSTable and scale motions -----------------
-    by_cols <- c("TR", "Tn", "p")             # common keys
+    ## -- 2.  Prepare UHSTable for a clean join ---------------------------
+    ##        (drop the old Vs30 col — it is always vref here)
+    UHSTable[, Vs30 := NULL]
+
+    ## -- 3.  Join and update motions -------------------------------------
+    by_cols <- c("TR", "Tn", "p")              # join keys
     data.table::setkeyv(UHSTable, by_cols)
     data.table::setkeyv(SaFTable,  by_cols)
 
     UHSTable <- SaFTable[UHSTable, allow.cartesian = TRUE][
       , `:=`(
-        AF   = SaF / Sa,   # amplification factor
-        Sa   = SaF,        # updated spectral acceleration
-        Vref = vref        # propagate reference velocity
+        SaF = ifelse(Vs30 == vref, Sa, SaF),
+        AF  = ifelse(Vs30 == vref, 1, SaF / Sa),
+        Sa  = SaF,
+        Vref = vref
       )
     ][]
   }
@@ -171,13 +172,11 @@ buildGMDP <- function(path,
   ##  Rock-reference shortcut  (unchanged logic)
   ## ------------------------------------------------------------------------
   if (is.null(vs30)) {
-    UHSTable[, `:=`(Vref = vref, Vs30 = vref, AF = 1)]
+    UHSTable[, `:=`(Vref = vref, Vs30 = vref, AF = 1, SaF = Sa)]
   }
 
 
-
   message("> Update UHSTable ...")
-
   UHSTable[, ID := IDo]
   message("> Update AEPTable ...")
   AEPTable[, `:=`(ID = IDo, Vref = vref, Vs30 = vref)]
@@ -185,7 +184,6 @@ buildGMDP <- function(path,
   return(list(
     AEPTable = AEPTable,
     UHSTable = UHSTable,
-    # AFmodel  = AFmodel,
     RMwTable = RMwTable
   ))
 }
