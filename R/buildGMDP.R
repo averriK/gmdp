@@ -135,10 +135,12 @@ buildGMDP <- function(path,
   ## ------------------------------------------------------------------------
   if (!is.null(vs30) && vref %in% c(760, 3000)) {
 
-    message(sprintf(
-      "> Fit UHS site response for Vs30 values: %s ...",
-      paste(vs30, collapse = ", ")
-    ))
+    if (!is.null(vs30) && vref %in% c(760, 3000)) {
+        for (Vs in vs30) {
+            message(sprintf("> Fit UHS Site Response for Vs30 %.1f...", Vs))
+            COLS <- setdiff(colnames(UHSTable), c("Sa", "PGA", "AEP", "POE"))
+            AUX <- UHSTable[, fitModel.AF.TR(.SD, pga = PGA, q = q_AF, Tn = Tn, vs30 = Vs, vref = vref), by = COLS]
+            AFmodel <- data.table::rbindlist(list(AFmodel, AUX), use.names = TRUE)
 
     ## -- 1.  Compute SaF for every (TR, Vs30, Tn, p) ----------------------
     SaFTable <- newmark::fitSaF(
