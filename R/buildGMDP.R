@@ -11,7 +11,7 @@
 #' @param vs30 Numeric vector. Target Vs30 values for site response analysis. If NULL, no site response is performed.
 #' @param vref Numeric. Reference Vs30 value. Default is 760 m/s.
 #' @param TRo Numeric vector. Target return periods for uniform hazard spectra. Default is seq(400,10000,by=25).
-#' @param NS    integer ≥ 1 – Monte-Carlo samples per model (default 30).
+#' @param q_AF Character. Quantile for amplification factors. Default is "mean".
 #'
 #' @return A list containing:
 #' \itemize{
@@ -21,8 +21,9 @@
 #'   \item RMwTable: Magnitude-Distance disaggregation table (if available)
 #' }
 #'
-#' @importFrom data.table data.table rbindlist
+#' @importFrom data.table data.table setdiff colnames unique rbindlist
 #' @importFrom utils unzip
+#' @importFrom stats setNames
 #'
 #' @examples
 #' \dontrun{
@@ -41,7 +42,7 @@ buildGMDP <- function(path,
                       vs30 = NULL,
                       vref = 760,
                       TRo = seq(400, 10000, by = 25),
-                      NS=100) {
+                      q_AF = "mean") {
   message("> Build AEP Table...")
   AEPTable <- NULL
 
@@ -112,7 +113,9 @@ buildGMDP <- function(path,
   if (engine == "openquake") {
     message("> Import Disaggregation data from openquake...")
     tryCatch(
-      {RMwTable <- importModel.oqRMw(path = TEMP, ITo = ITo, vref = vref)},
+      {
+        RMwTable <- importModel.oqRMw(path = TEMP, ITo = ITo, vref = vref)
+      },
       error = function(e) {
         message(">> Skipping disagg data due to error: ", e$message)
       }
@@ -129,56 +132,32 @@ buildGMDP <- function(path,
   COLS <- setdiff(colnames(AEPTable), c("Sa", "POE", "AEP", "TR"))
   UHSTable <- AEPTable[Tn != -1, remeshGroup(.SD, TRo), by = COLS]
 
+  # (4) Merge Tn=0 => PGA
+  message("> Merge Tn=0 => PGA into UHSTable ...")
+  COLS <- setdiff(colnames(UHSTable), c("Sa", "Tn", "AEP", "POE"))
+  UHSTable[, PGA := Sa[Tn == 0], by = COLS]
 
-  ## ------------------------------------------------------------------------
-  ##  Site-response scaling with fitSaF()  (replaces previous block)
-  ## ------------------------------------------------------------------------
+  AFmodel <- data.table::data.table()
+
   if (!is.null(vs30) && vref %in% c(760, 3000)) {
+    for (Vs in vs30) {
+      message(sprintf("> Fit UHS Site Response for Vs30 %.1f...", Vs))
+      COLS <- setdiff(colnames(UHSTable), c("Sa", "PGA", "AEP", "POE"))
+      AUX <- UHSTable[, fitModel.AF.TR(.SD, pga = PGA, q = q_AF, Tn = Tn, vs30 = Vs, vref = vref), by = COLS]
+      AFmodel <- data.table::rbindlist(list(AFmodel, AUX), use.names = TRUE)
 
-    if (!is.null(vs30) && vref %in% c(760, 3000)) {
-        for (Vs in vs30) {
-            message(sprintf("> Fit UHS Site Response for Vs30 %.1f...", Vs))
-            COLS <- setdiff(colnames(UHSTable), c("Sa", "PGA", "AEP", "POE"))
-            AUX <- UHSTable[, fitModel.AF.TR(.SD, pga = PGA, q = q_AF, Tn = Tn, vs30 = Vs, vref = vref), by = COLS]
-            AFmodel <- data.table::rbindlist(list(AFmodel, AUX), use.names = TRUE)
-
-    ## -- 1.  Compute SaF for every (TR, Vs30, Tn, p) ----------------------
-    SaFTable <- newmark::fitSaF(
-      uhs  = UHSTable[, .(TR, Sa, Tn, p)],   # minimal columns
-      vs30 = vs30,                           # scalar OR vector
-      NS   = NS,
-      vref = vref
-    )
-    ## SaFTable cols: TR, Vs30, Vref, Tn, p, SaF
-
-    ## -- 2.  Prepare UHSTable for a clean join ---------------------------
-    ##        (drop the old Vs30 col — it is always vref here)
-    UHSTable[, Vs30 := NULL]
-
-    ## -- 3.  Join and update motions -------------------------------------
-    by_cols <- c("TR", "Tn", "p")              # join keys
-    data.table::setkeyv(UHSTable, by_cols)
-    data.table::setkeyv(SaFTable,  by_cols)
-
-    UHSTable <- SaFTable[UHSTable, allow.cartesian = TRUE][
-      , `:=`(
-        SaF = ifelse(Vs30 == vref, Sa, SaF),
-        AF  = ifelse(Vs30 == vref, 1, SaF / Sa),
-        Sa  = SaF,
-        Vref = vref
-      )
-    ][]
+      message(sprintf("> Fit AEP Site Response for Vs30 %.1f...", Vs))
+    }
+    COLS <- colnames(UHSTable)[colnames(UHSTable) %in% colnames(AFmodel)]
+    UHSTable <- AFmodel[UHSTable, on = COLS][, `:=`(Sa = AF * Sa, PGA = AF * PGA)] |> unique()
   }
 
-  ## ------------------------------------------------------------------------
-  ##  Rock-reference shortcut  (unchanged logic)
-  ## ------------------------------------------------------------------------
   if (is.null(vs30)) {
-    UHSTable[, `:=`(Vref = vref, Vs30 = vref, AF = 1, SaF = Sa)]
+    UHSTable[, `:=`(Vref = vref, Vs30 = vref, AF = 1, sdLnAF = 0)]
   }
-
 
   message("> Update UHSTable ...")
+
   UHSTable[, ID := IDo]
   message("> Update AEPTable ...")
   AEPTable[, `:=`(ID = IDo, Vref = vref, Vs30 = vref)]
@@ -186,6 +165,7 @@ buildGMDP <- function(path,
   return(list(
     AEPTable = AEPTable,
     UHSTable = UHSTable,
+    AFmodel  = AFmodel,
     RMwTable = RMwTable
   ))
 }
