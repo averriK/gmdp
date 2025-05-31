@@ -2,7 +2,7 @@
 % Please edit documentation in R/buildGMDP.R
 \name{buildGMDP}
 \alias{buildGMDP}
-\title{Build Ground Motion Design Parameters}
+\title{Build Ground-Motion Design Parameters (GMDP)}
 \usage{
 buildGMDP(
   path,
@@ -10,45 +10,40 @@ buildGMDP(
   engine = "openquake",
   vs30 = NULL,
   vref = 760,
-  TRo = seq(400, 10000, by = 25),
+  TRo = 2475,
   NS = 100
 )
 }
 \arguments{
-\item{path}{Character. Path to the directory containing hazard data files.}
+\item{path}{Character. Directory with hazard data files.}
 
-\item{IDo}{Character. Identifier for the GMDP. Usually "gmdp" or ""gem".}
+\item{IDo}{Character. Identifier for the GMDP. Default \code{"gmdp"}.}
 
-\item{engine}{Character. Source of hazard data, either "openquake" or "user". Default is "openquake".}
+\item{engine}{Character. \code{"openquake"} ( default ) or \code{"user"}.}
 
-\item{vs30}{Numeric vector. Target Vs30 values for site response analysis. If NULL, no site response is performed.}
+\item{vs30}{Numeric vector. Target Vs30 values; \code{NULL} skips site response.}
 
-\item{vref}{Numeric. Reference Vs30 value. Default is 760 m/s.}
+\item{vref}{Numeric. Reference Vs30 (m/s). Default 760.}
 
-\item{TRo}{Numeric vector. Target return periods for uniform hazard spectra. Default is seq(400,10000,by=25).}
+\item{TRo}{Numeric vector. Target return periods (years).}
 
-\item{NS}{integer ≥ 1 – Monte-Carlo samples per model (default 30).}
+\item{NS}{Integer ≥ 1. Monte-Carlo samples per model. Default 100.}
 }
 \value{
-A list containing:
-\itemize{
-\item AEPTable: Annual Exceedance Probability table
-\item UHSTable: Uniform Hazard Spectrum table
-\item AFmodel: Amplification Factor model
-\item RMwTable: Magnitude-Distance disaggregation table (if available)
-}
+A named list with \code{AEPTable}, \code{UHSTable}, and \code{RMwTable}
+(\code{NULL} if disaggregation is unavailable).
 }
 \description{
-This function builds ground motion design parameters from hazard curves obtained from OpenQuake or user-provided data.
+A thin wrapper that assembles an AEP table, a uniform-hazard‐spectrum
+table, and—where available—a magnitude–distance disaggregation table.
+The heavy lifting is delegated to three internal helpers
+(\code{buildAEPTable()}, \code{buildUHSTable()}, \code{buildMwTable()}).
 }
 \examples{
 \dontrun{
-# Example with OpenQuake data
-result <- buildGMDP(
-    path = "path/to/oq/output",
-    vs30 = c(300, 760),
-    TRo = seq(475, 2475, by = 100)
-)
+buildGMDP(path = "path/to/oq/output",
+          vs30 = c(300, 760),
+          TRo  = seq(475, 2475, by = 100))
 }
 
 }

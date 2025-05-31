@@ -1,35 +1,6 @@
-#' Build an Annual-Exceedance-Probability (AEP) table from OpenQuake or user data
-#'
-#' @description
-#' Reads one or more OpenQuake ZIP archives — or a user-supplied
-#' “AEP.xlsx” file — and merges the embedded hazard curves into a
-#' single **AEPTable**.
-#' When \code{engine = "openquake"} the ZIP files are extracted to a
-#' disposable temporary directory that is returned so downstream
-#' routines (e.g., disaggregation) can re-use the same files without
-#' reopening the archives.
-#'
-#' @param path   \code{character}. Directory that contains the ZIP archives
-#'               (OpenQuake) or the “AEP.xlsx” file (user engine).
-#' @param engine \code{character}. Either \code{"openquake"} (default) or
-#'               \code{"user"}.
-#' @param vref   \code{numeric}. Reference site class velocity (m/s);
-#'               passed through to \code{importModel.oqAEP()}.
-#'
-#' @return A named \code{list} with two elements
-#'   \describe{
-#'     \item{\strong{AEPTable}}{A \code{data.table} with the merged hazard curves.}
-#'     \item{\strong{temp_dir}}{The temporary extraction folder used for
-#'             OpenQuake input; \code{NULL} when \code{engine = "user"}.}
-#'   }
-#'
-#' @seealso
-#'   \code{\link{buildUHSTable}}, \code{\link{buildMwTable}},
-#'   \code{\link{buildGMDP}}
-#'
+#' Internal helper for buildGMDP()
 #' @keywords internal
 #' @noRd
-
 
 buildAEPTable <- function(path, engine = "openquake", vref = 760) {
 

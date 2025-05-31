@@ -10,7 +10,6 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports: 
     data.table,
-    stats,   
     readxl,
     stringr,
     utils,

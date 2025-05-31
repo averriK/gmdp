@@ -1,57 +1,37 @@
 #' Build Ground-Motion Design Parameters (GMDP)
 #'
-#' @description
-#' Orchestrates the full GMDP workflow by delegating to three focused
-#' helpers:
-#' \itemize{
-#'   \item \code{\link{buildAEPTable}} – reads hazard curves and assembles an AEP table
-#'   \item \code{\link{buildUHSTable}} – remeshes to uniform-hazard spectra and (optionally) performs site-response scaling
-#'   \item \code{\link{buildMwTable}}  – imports magnitude–distance disaggregation (when available)
-#' }
-#' The function returns the same list structure as earlier versions, so
-#' existing analysis scripts require no changes.
+#' A thin wrapper that assembles an AEP table, a uniform-hazard‐spectrum
+#' table, and—where available—a magnitude–distance disaggregation table.
+#' The heavy lifting is delegated to three internal helpers
+#' (`buildAEPTable()`, `buildUHSTable()`, `buildMwTable()`).
 #'
-#' @param IDo    Character. Identifier for the GMDP.  Default \code{"gmdp"}.
-#' @param path   Character. Directory containing hazard data files.
-#' @param engine Character. Source of hazard data, either \code{"openquake"}
-#'               or \code{"user"}.  Default \code{"openquake"}.
-#' @param vs30   Numeric vector. Target Vs30 values for site-response
-#'               analysis. If \code{NULL}, no site response is performed.
-#' @param vref   Numeric. Reference Vs30 value (m/s).  Default \code{760}.
-#' @param TRo    Numeric vector. Target return periods for uniform-hazard
-#'               spectra.  Default \code{seq(400, 10000, by = 25)}.
-#' @param NS     Integer ≥ 1. Monte-Carlo samples per model.  Default \code{100}.
+#' @param IDo    Character. Identifier for the GMDP. Default `"gmdp"`.
+#' @param path   Character. Directory with hazard data files.
+#' @param engine Character. `"openquake"` ( default ) or `"user"`.
+#' @param vs30   Numeric vector. Target Vs30 values; `NULL` skips site response.
+#' @param vref   Numeric. Reference Vs30 (m/s). Default 760.
+#' @param TRo    Numeric vector. Target return periods (years).
+#' @param NS     Integer ≥ 1. Monte-Carlo samples per model. Default 100.
 #'
-#' @return A named \code{list} with elements
-#'   \describe{
-#'     \item{\strong{AEPTable}}{Annual-exceedance-probability table.}
-#'     \item{\strong{UHSTable}}{Uniform-hazard-spectrum table.}
-#'     \item{\strong{RMwTable}}{Magnitude-distance disaggregation table (or \code{NULL}).}
-#'   }
+#' @return A named list with `AEPTable`, `UHSTable`, and `RMwTable`
+#'   (`NULL` if disaggregation is unavailable).
 #'
 #' @examples
 #' \dontrun{
-#' result <- buildGMDP(
-#'   path   = "path/to/oq/output",
-#'   vs30   = c(300, 760),
-#'   TRo    = seq(475, 2475, by = 100)
-#' )
+#' buildGMDP(path = "path/to/oq/output",
+#'           vs30 = c(300, 760),
+#'           TRo  = seq(475, 2475, by = 100))
 #' }
 #'
-#' @seealso
-#'   \code{\link{buildAEPTable}}, \code{\link{buildUHSTable}},
-#'   \code{\link{buildMwTable}}
-#'
-#' @importFrom data.table data.table rbindlist
-#' @importFrom utils unzip
 #' @export
+
 
 buildGMDP <- function(path,
                       IDo    = "gmdp",
                       engine = "openquake",
                       vs30   = NULL,
                       vref   = 760,
-                      TRo    = seq(400, 10000, by = 25),
+                      TRo    = 2475,
                       NS     = 100) {
 
   ## 1 ────────────────────────────────────────────────────────────────────
@@ -83,8 +63,8 @@ buildGMDP <- function(path,
   ## Final bookkeeping
   ## ---------------------------------------------------------------------
   UHSTable[, ID := IDo]
-  AEPTable[, ID := IDo]
-  RMwTable[, ID := IDo]
+  # AEPTable[, ID := IDo]
+  # RMwTable[, ID := IDo]
   list(
     AEPTable = AEPTable,
     UHSTable = UHSTable,
