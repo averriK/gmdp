@@ -17,7 +17,7 @@
 #'
 #' @export
 buildGMDP <- function(path,
-                      IDo = "gmdp",
+                      IDo = "GEM",
                       engine = "openquake",
                       vref = 760,
                       TRo = c(475, 975, 1975, 2475, 4975, 9975)) {
@@ -47,6 +47,7 @@ buildGMDP <- function(path,
     UHSTable <- AEPTable[Tn != -1, remeshGroup(.SD, TRo), by = COLS]
     UHSTable[, `:=`(Vref = vref, Vs30 = vref, AF = 1, SaF = Sa)]
     UHSTable[, ID := IDo]
+    AEPTable[, ID := IDo]
 
     list(
         AEPTable = AEPTable,
@@ -105,7 +106,7 @@ importAEPTable <- function(path, engine = "openquake", vref = 760) {
     if (is.null(AEPTable) || !nrow(AEPTable)) {
         stop("No valid AEP data found in path: ", path)
     }
-
+    AEPTable[, `:=`(Vref = vref, Vs30 = vref)]
     return(list(AEPTable = AEPTable[]))
 }
 

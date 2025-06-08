@@ -6,7 +6,7 @@
 \usage{
 buildGMDP(
   path,
-  IDo = "gmdp",
+  IDo = "GEM",
   engine = "openquake",
   vref = 760,
   TRo = c(475, 975, 1975, 2475, 4975, 9975)
