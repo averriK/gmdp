@@ -8,10 +8,8 @@ buildGMDP(
   path,
   IDo = "gmdp",
   engine = "openquake",
-  vs30 = NULL,
   vref = 760,
-  TRo = 2475,
-  NS = 100
+  TRo = c(475, 975, 1975, 2475, 4975, 9975)
 )
 }
 \arguments{
@@ -19,31 +17,18 @@ buildGMDP(
 
 \item{IDo}{Character. Identifier for the GMDP. Default \code{"gmdp"}.}
 
-\item{engine}{Character. \code{"openquake"} ( default ) or \code{"user"}.}
-
-\item{vs30}{Numeric vector. Target Vs30 values; \code{NULL} skips site response.}
+\item{engine}{Character. \code{"openquake"} (default) or \code{"user"}.}
 
 \item{vref}{Numeric. Reference Vs30 (m/s). Default 760.}
 
 \item{TRo}{Numeric vector. Target return periods (years).}
-
-\item{NS}{Integer ≥ 1. Monte-Carlo samples per model. Default 100.}
 }
 \value{
 A named list with \code{AEPTable}, \code{UHSTable}, and \code{RMwTable}
 (\code{NULL} if disaggregation is unavailable).
 }
 \description{
-A thin wrapper that assembles an AEP table, a uniform-hazard‐spectrum
-table, and—where available—a magnitude–distance disaggregation table.
-The heavy lifting is delegated to three internal helpers
-(\code{buildAEPTable()}, \code{buildUHSTable()}, \code{buildMwTable()}).
-}
-\examples{
-\dontrun{
-buildGMDP(path = "path/to/oq/output",
-          vs30 = c(300, 760),
-          TRo  = seq(475, 2475, by = 100))
-}
-
+Assembles an annual-exceedance-probability (AEP) table, uniform-hazard-spectrum
+(UHS) table, and—where available—a magnitude–distance disaggregation table,
+using OpenQuake or user-supplied hazard files.
 }
