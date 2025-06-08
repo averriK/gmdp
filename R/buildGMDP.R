@@ -309,26 +309,58 @@ importModel.oqRMw <- function(path, ITo, vref) {
 #' Internal: Interpolate Hazard Curve to Uniform TR Grid
 #' @keywords internal
 #' @noRd
+# ---------------------------------------------------------------------------
+#  Patched: reMeshCurve()
+#  • Same name, same 3‑argument signature.
+#  • Replaces “flat‑tail” fallback with log‑log extrapolation, so each
+#    quantile keeps its own slope and cannot collapse into a single value.
+# ---------------------------------------------------------------------------
 reMeshCurve <- function(TRi, Sai, TRo) {
-    nOut <- length(TRo)
-    Sa_star <- numeric(nOut)
 
-    for (j in seq_len(nOut)) {
-        trT <- TRo[j]
-        if (trT <= TRi[1]) {
-            Sa_star[j] <- Sai[1]
-        } else if (trT >= TRi[length(TRi)]) {
-            Sa_star[j] <- Sai[length(Sai)]
-        } else {
-            idx_high <- which(TRi >= trT)[1]
-            idx_low <- idx_high - 1
-            frac <- (trT - TRi[idx_low]) / (TRi[idx_high] - TRi[idx_low])
-            val_log <- log(Sai[idx_low]) + frac * (log(Sai[idx_high]) - log(Sai[idx_low]))
-            Sa_star[j] <- exp(val_log)
-        }
+  if (length(TRi) < 2L)
+    stop("reMeshCurve: need at least two (TR, Sa) points for interpolation.")
+
+  # Pre‑compute logs once – faster and clearer
+  log_TRi <- log(TRi)
+  log_Sai <- log(Sai)
+
+  Sa_star <- numeric(length(TRo))
+
+  for (j in seq_along(TRo)) {
+
+    trT <- TRo[j]
+
+    # ----------------- 1.  Below first point → extrapolate ------------------
+    if (trT <= TRi[1]) {
+      frac <- (log(trT) - log_TRi[1]) / (log_TRi[2] - log_TRi[1])
+      Sa_star[j] <- exp(log_Sai[1] + frac * (log_Sai[2] - log_Sai[1]))
+      next
     }
-    Sa_star
+
+    # ----------------- 2.  Above last point → extrapolate -------------------
+    if (trT >= TRi[length(TRi)]) {
+      n <- length(TRi)
+      frac <- (log(trT) - log_TRi[n - 1]) / (log_TRi[n] - log_TRi[n - 1])
+      Sa_star[j] <- exp(log_Sai[n - 1] + frac * (log_Sai[n] - log_Sai[n - 1]))
+      next
+    }
+
+    # ----------------- 3.  Inside the curve → interpolate -------------------
+    if (trT %in% TRi) {                            # exact node
+      Sa_star[j] <- Sai[match(trT, TRi)]
+    } else {                                       # between two nodes
+      idx_high <- which(TRi > trT)[1]
+      idx_low  <- idx_high - 1
+      frac <- (log(trT) - log_TRi[idx_low]) /
+        (log_TRi[idx_high] - log_TRi[idx_low])
+      Sa_star[j] <- exp(log_Sai[idx_low] +
+                          frac * (log_Sai[idx_high] - log_Sai[idx_low]))
+    }
+  }
+
+  Sa_star
 }
+
 
 #' Internal: Remesh a Group to Uniform TR Grid
 #' @keywords internal
