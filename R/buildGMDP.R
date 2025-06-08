@@ -37,27 +37,42 @@ buildGMDP <- function(path,
   ## 1 ────────────────────────────────────────────────────────────────────
   ## Annual-exceedance probability table
   ## ---------------------------------------------------------------------
-  AEP_res   <- buildAEPTable(path = path, engine = engine, vref = vref)
-  AEPTable  <- AEP_res$AEPTable
-  temp_dir  <- AEP_res$temp_dir                   # only meaningful for OQ
+  OUT   <- importAEPTable(path = path, engine = engine, vref = vref)
+  AEPTable  <- OUT$AEPTable
   ITo       <- unique(AEPTable$ITo)[1]
 
   ## 2 ────────────────────────────────────────────────────────────────────
   ## Magnitude-distance disaggregation (optional)
   ## ---------------------------------------------------------------------
-  RMwTable  <- buildMwTable(temp_dir = temp_dir,
-                            engine   = engine,
-                            ITo      = ITo,
-                            vref     = vref)
 
+  if (engine != "openquake") {
+    message("> Disaggregation not requested for engine = '", engine, "'.")
+    return(NULL)
+  }
+
+  message("> Building Disaggregation Hazard Table...")
+  OUT <- tryCatch(
+    importModel.oqRMw(path = temp_dir, ITo = ITo, vref = vref),
+    error = function(e) {
+      message(">> Skipping disagg (", e$message, ")")
+      NULL
+    }
+  )
+
+  if (!is.null(OUT))
+    RMwTable <- OUT[, `:=`(SID = Vs30toSID(vref), Vs30 = vref, SM = engine, IT = ITo)]
+  else
+    message("> Disaggregation data not available.")
   ## 3 ────────────────────────────────────────────────────────────────────
   ## Uniform-hazard spectra, optional site-response scaling
   ## ---------------------------------------------------------------------
-  UHSTable  <- buildUHSTable(AEPTable = AEPTable,
-                             vs30     = vs30,
-                             vref     = vref,
-                             TRo      = TRo,
-                             NS       = NS)
+
+  message("> Re-mesh hazard data on a uniform TR grid ...")
+  COLS      <- setdiff(names(AEPTable), c("Sa", "POE", "AEP", "TR"))
+  UHSTable  <- AEPTable[Tn != -1, remeshGroup(.SD, TRo), by = COLS]
+
+  ## ── Optional site-response scaling ────────────────────────────────────
+  UHSTable[, `:=`(Vref = vref, Vs30 = vref, AF = 1, SaF = Sa)]
 
   ## 4 ────────────────────────────────────────────────────────────────────
   ## Final bookkeeping

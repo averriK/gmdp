@@ -2,7 +2,7 @@
 #' @keywords internal
 #' @noRd
 
-buildAEPTable <- function(path, engine = "openquake", vref = 760) {
+importAEPTable <- function(path, engine = "openquake", vref = 760) {
 
   message("> Build AEP Table...")
   AEPTable <- NULL
@@ -47,5 +47,5 @@ buildAEPTable <- function(path, engine = "openquake", vref = 760) {
   if (is.null(AEPTable) || !nrow(AEPTable))
     stop("No valid AEP data found in path: ", path)
 
-  list(AEPTable = AEPTable, temp_dir = temp_dir)
+  AEPTable[]
 }
