@@ -2,53 +2,33 @@
 % Please edit documentation in R/buildGMDP.R
 \name{buildGMDP}
 \alias{buildGMDP}
-\title{Build Ground Motion Design Parameters}
+\title{Build Ground-Motion Design Parameters (GMDP)}
 \usage{
 buildGMDP(
   path,
-  IDo = "gmdp",
+  IDo = "GEM",
   engine = "openquake",
-  vs30 = NULL,
   vref = 760,
-  TRo = seq(400, 10000, by = 25),
-  q_AF = "mean"
+  TRo = c(475, 975, 1975, 2475, 4975, 9975)
 )
 }
 \arguments{
-\item{path}{Character. Path to the directory containing hazard data files.}
+\item{path}{Character. Directory with hazard data files.}
 
-\item{IDo}{Character. Identifier for the GMDP. Usually "gmdp" or ""gem".}
+\item{IDo}{Character. Identifier for the GMDP. Default \code{"gmdp"}.}
 
-\item{engine}{Character. Source of hazard data, either "openquake" or "user". Default is "openquake".}
+\item{engine}{Character. \code{"openquake"} (default) or \code{"user"}.}
 
-\item{vs30}{Numeric vector. Target Vs30 values for site response analysis. If NULL, no site response is performed.}
+\item{vref}{Numeric. Reference Vs30 (m/s). Default 760.}
 
-\item{vref}{Numeric. Reference Vs30 value. Default is 760 m/s.}
-
-\item{TRo}{Numeric vector. Target return periods for uniform hazard spectra. Default is seq(400,10000,by=25).}
-
-\item{q_AF}{Character. Quantile for amplification factors. Default is "mean".}
+\item{TRo}{Numeric vector. Target return periods (years).}
 }
 \value{
-A list containing:
-\itemize{
-\item AEPTable: Annual Exceedance Probability table
-\item UHSTable: Uniform Hazard Spectrum table
-\item AFmodel: Amplification Factor model
-\item RMwTable: Magnitude-Distance disaggregation table (if available)
-}
+A named list with \code{AEPTable}, \code{UHSTable}, and \code{RMwTable}
+(\code{NULL} if disaggregation is unavailable).
 }
 \description{
-This function builds ground motion design parameters from hazard curves obtained from OpenQuake or user-provided data.
-}
-\examples{
-\dontrun{
-# Example with OpenQuake data
-result <- buildGMDP(
-    path = "path/to/oq/output",
-    vs30 = c(300, 760),
-    TRo = seq(475, 2475, by = 100)
-)
-}
-
+Assembles an annual-exceedance-probability (AEP) table, uniform-hazard-spectrum
+(UHS) table, and—where available—a magnitude–distance disaggregation table,
+using OpenQuake or user-supplied hazard files.
 }
